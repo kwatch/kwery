@@ -83,7 +83,7 @@ module Kwery
         end
         meta.free()
       end
-      return Result.new(field_names, stmt)
+      return MySQLResult.new(field_names, stmt)
     end
 
     def start_transaction   ## prepared statement doesn't support transaction
@@ -98,47 +98,47 @@ module Kwery
       return @conn.query('rollback')
     end
 
+  end
 
-    class Result
 
-      def initialize(column_names, stmt)
-        @column_names = column_names
-        @stmt = stmt
+  class MySQLResult
+
+    def initialize(column_names, stmt)
+      @column_names = column_names
+      @stmt = stmt
+    end
+
+    def fetch_array
+      return @stmt.fetch()
+    end
+
+    def fetch_hash
+      arr = @stmt.fetch()
+      return nil unless arr
+      hash = {}
+      @column_names.zip(arr) {|key, val| hash[key] = val }
+      return hash
+    end
+
+    def each_array
+      while arr = @stmt.fetch()
+        yield(arr)
       end
+      nil
+    end
 
-      def fetch_array
-        return @stmt.fetch()
-      end
-
-      def fetch_hash
-        arr = @stmt.fetch()
-        return nil unless arr
+    def each_hash
+      while arr = @stmt.fetch()
         hash = {}
         @column_names.zip(arr) {|key, val| hash[key] = val }
-        return hash
+        yield(hash)
       end
+      nil
+    end
 
-      def each_array
-        while arr = @stmt.fetch()
-          yield(arr)
-        end
-        nil
-      end
-
-      def each_hash
-        while arr = @stmt.fetch()
-          hash = {}
-          @column_names.zip(arr) {|key, val| hash[key] = val }
-          yield(hash)
-        end
-        nil
-      end
-
-      def free
-        @column_names = nil
-        @stmt.free_result()
-      end
-
+    def free
+      @column_names = nil
+      @stmt.free_result()
     end
 
   end
