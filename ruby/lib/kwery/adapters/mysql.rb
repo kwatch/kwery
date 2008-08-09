@@ -10,10 +10,21 @@ require 'kwery/query'
 require 'mysql'
 
 
+## check whether motto_mysql is available or not
+arr = [ :fetch_one_hash, :fetch_one_array, :fetch_one_object,
+        :fetch_all_hash, :fetch_all_array, :fetch_all_object, ]
+HAS_MOTTO = arr.all? {|m| ::Mysql::Result.method_defined?(m) }
+
+
 module Kwery
 
 
   class MySQLQuery < Query
+
+    def initialize(*args)
+      super
+      @auto_free = false
+    end if HAS_MOTTO
 
     MYSQL_KEYWORDS = %w[
           add all alter analyze and as asc asensitive
@@ -71,6 +82,11 @@ module Kwery
 
     def execute(sql)
       $stderr.puts sql if @debug
+      return @conn.query(sql)
+    end if HAS_MOTTO
+
+    def execute(sql)
+      $stderr.puts sql if @debug
       #return @conn.query(sql)
       stmt = @conn.prepare(sql)
       stmt.execute()
@@ -84,24 +100,24 @@ module Kwery
         meta.free()
       end
       return MySQLResult.new(field_names, stmt)
-    end
+    end unless HAS_MOTTO
 
     def start_transaction   ## prepared statement doesn't support transaction
       return @conn.query('start transaction')
-    end
+    end unless HAS_MOTTO
 
     def commit
       return @conn.query('commit')
-    end
+    end unless HAS_MOTTO
 
     def rollback
       return @conn.query('rollback')
-    end
+    end unless HAS_MOTTO
 
   end
 
 
-  class MySQLResult
+  class MySQLResult   # unused when motto_mysql is available
 
     def initialize(column_names, stmt)
       @column_names = column_names
@@ -164,10 +180,17 @@ module Kwery
 end
 
 
-class ::Mysql::Result
+class ::Mysql::Result  # :nodoc:
+  alias _fetch_hash fetch_hash
+  alias fetch_hash fetch_one_hash
+  alias fetch_array fetch_one_array
+  alias each_hash fetch_all_hash
+  alias each_array fetch_all_array
+end if HAS_MOTTO
 
+
+class ::Mysql::Result # :nodoc:
   alias each_array  each
   alias fetch_array fetch_row
   ## each_hash and fetch_hash are already defined
-
-end
+end unless HAS_MOTTO

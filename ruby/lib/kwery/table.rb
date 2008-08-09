@@ -1,5 +1,5 @@
 ###
-### $Rev: $
+### $Rev$
 ### $Release: $
 ### $Copyright$
 ### $License$
@@ -16,7 +16,7 @@ module Kwery
     end
 
     def build_integer_column(name, nax)
-      
+
     end
 
   end
@@ -36,7 +36,7 @@ module Kwery
       #
       sql = build_create_table_sql()
       if (@conn)
-        
+
       end
       @_columns
     end
@@ -57,7 +57,7 @@ module Kwery
     def create
     end
   end
-  
+
 
   q.create_table('teams') do |t|
     #t.add(:id)

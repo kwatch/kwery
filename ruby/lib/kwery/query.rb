@@ -265,7 +265,7 @@ module Kwery
       result = execute(sql)
       @builder.clear()
       hash = result.fetch_hash()
-      result.free()
+      result.free() if @auto_free
       return hash
     end
 
@@ -277,10 +277,11 @@ module Kwery
       result = execute(sql)
       @builder.clear()
       list = []
-      while hash = result.fetch_hash()
-        list << hash
-      end
-      result.free()
+      #while hash = result.fetch_hash()
+      #  list << hash
+      #end
+      result.each_hash {|hash| list << hash }
+      result.free() if @auto_free
       return list
     end
 
@@ -302,7 +303,7 @@ module Kwery
           hash.each {|k, v| obj.__send__("#{k}=", v) }
         end
       end
-      result.free()
+      result.free() if @auto_free
       return list
     end
 
@@ -315,7 +316,7 @@ module Kwery
       #return result.collect {|arr| arr.first }
       list = []
       result.each_array {|arr| list << arr.first }
-      result.free()
+      result.free() if @auto_free
       return list
     end
 
@@ -407,6 +408,7 @@ module Kwery
     def initialize(conn)
       @conn = conn
       @builder = self
+      @auto_free = true
     end
 
     class <<self
