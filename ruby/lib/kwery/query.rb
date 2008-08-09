@@ -269,8 +269,9 @@ module Kwery
       return hash
     end
 
-    def get_all(table)
+    def get_all(table, key=UNDEFINED, val=UNDEFINED)
       set_table(table)
+      @builder.where(key, val) unless key.equal?(UNDEFINED)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql('*')
       result = execute(sql)

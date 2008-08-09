@@ -157,6 +157,15 @@ describe 'Kwery::Query#get_all' do
     list.each {|hash| hash['team_id'].to_i.should == 1 }
   end
 
+  it "can take where-clause" do
+    expected = q.get_all('members') {|c| c.where(:team_id, 1) }
+    q.get_all('members', 'team_id = 1').should == expected
+    q.get_all('members', :team_id, 1).should == expected
+    q.get_all('members', 'team_id =', 1).should == expected
+    q.get_all('members', :team_id => 1).should == expected
+    #q.get_all('members', [[:team_id, 1]]).should == expected
+  end
+
   it "returns empty Array when data not found" do
     list = q.get_all('members') {|c| c.where(:team_id, 999) }
     list.should be_a_kind_of(Array)
