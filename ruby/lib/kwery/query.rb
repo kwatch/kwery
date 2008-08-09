@@ -36,12 +36,12 @@ module Kwery
       end
     end
 
-    def build_select_sql(arg=nil, id=nil)
-      sql = "select #{arg || '*'} from #{@_table}"
-      sql << @_join if @_join
-      if (id)
-        sql << " where id = #{quote_value(id)}"
+    def build_select_sql(arg, id=nil)
+      if id
+        sql = "select #{arg || '*'} from #{@_table} where id = #{quote_value(id)}"
       else
+        sql = "select #{arg || '*'} from #{@_table}"
+        sql << @_join if @_join
         sql << ' where '    << @_where    if @_where
         sql << ' group by ' << @_group_by if @_group_by
         sql << ' having '   << @_having   if @_having
@@ -287,7 +287,7 @@ module Kwery
     def select(table, columns=nil, klass=Hash)
       set_table(table)
       yield(@builder) if block_given?
-      sql = @builder.build_select_sql(columns, nil)
+      sql = @builder.build_select_sql(columns)
       result = execute(sql)
       @builder.clear()
       list = []
@@ -309,7 +309,7 @@ module Kwery
     def select_id(table)
       set_table(table)
       yield(@builder) if block_given?
-      sql = @builder.build_select_sql('id', nil)
+      sql = @builder.build_select_sql('id')
       result = execute(sql)
       @builder.clear()
       return result.collect {|arr| arr.first }
