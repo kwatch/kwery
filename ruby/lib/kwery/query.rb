@@ -372,13 +372,17 @@ module Kwery
     end
 
     def transaction
-      return execute('start transaction') unless block_given?
-      execute('start transaction')
+      return start_transaction() unless block_given?
+      start_transaction()
       yield(@builder)
       return commit()
     rescue Exception => ex
       rollback()
       raise ex
+    end
+
+    def start_transaction
+      return execute('start transaction')
     end
 
     def commit

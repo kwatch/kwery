@@ -69,6 +69,78 @@ module Kwery
       return MYSQL_KEYWORD_TABLE[word] ? "`#{word}`" : word
     end
 
+    def execute(sql)
+      $stderr.puts sql if @debug
+      #return @conn.query(sql)
+      stmt = @conn.prepare(sql)
+      stmt.execute()
+      meta = stmt.result_metadata()
+      field_names = []
+      if meta
+        while field = meta.fetch_field
+          #field_names << field.name.intern
+          field_names << field.name
+        end
+        meta.free()
+      end
+      return Result.new(field_names, stmt)
+    end
+
+    def start_transaction   ## prepared statement doesn't support transaction
+      return @conn.query('start transaction')
+    end
+
+    def commit
+      return @conn.query('commit')
+    end
+
+    def rollback
+      return @conn.query('rollback')
+    end
+
+
+    class Result
+
+      def initialize(column_names, stmt)
+        @column_names = column_names
+        @stmt = stmt
+      end
+
+      def fetch_array
+        return @stmt.fetch()
+      end
+
+      def fetch_hash
+        arr = @stmt.fetch()
+        return nil unless arr
+        hash = {}
+        @column_names.zip(arr) {|key, val| hash[key] = val }
+        return hash
+      end
+
+      def each_array
+        while arr = @stmt.fetch()
+          yield(arr)
+        end
+        nil
+      end
+
+      def each_hash
+        while arr = @stmt.fetch()
+          hash = {}
+          @column_names.zip(arr) {|key, val| hash[key] = val }
+          yield(hash)
+        end
+        nil
+      end
+
+      def free
+        @column_names = nil
+        @stmt.free_result()
+      end
+
+    end
+
   end
 
 
