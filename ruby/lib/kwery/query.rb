@@ -294,7 +294,7 @@ module Kwery
       if klass == Hash
         result.each_hash {|hash| list << hash }
       elsif klass == Array
-        result.each {|arr| list << arr }
+        result.each_array {|arr| list << arr }
       else
         result.each_hash do |hash|
           list << (obj = klass.new)
@@ -312,7 +312,11 @@ module Kwery
       sql = @builder.build_select_sql('id')
       result = execute(sql)
       @builder.clear()
-      return result.collect {|arr| arr.first }
+      #return result.collect {|arr| arr.first }
+      list = []
+      result.each_array {|arr| list << arr.first }
+      result.free()
+      return list
     end
 
     def insert(table, values)

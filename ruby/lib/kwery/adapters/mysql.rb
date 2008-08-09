@@ -90,3 +90,12 @@ module Kwery
 
 
 end
+
+
+class ::Mysql::Result
+
+  alias each_array  each
+  alias fetch_array fetch_row
+  ## each_hash and fetch_hash are already defined
+
+end
