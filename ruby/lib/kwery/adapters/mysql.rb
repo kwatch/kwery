@@ -81,7 +81,7 @@ module Kwery
   end
 
 
-  def self.connect(host=nil, user=nil, passwd=nil, dbname=nil, charset=nil, options=nil)
+  def self.connect(host=nil, user=nil, passwd=nil, dbname=nil, options=nil)
     return ::Mysql.connect(host||'loalhost', user||'root', passwd, dbname)
   end
 
