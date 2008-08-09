@@ -8,7 +8,7 @@
 File.class_eval do
   path = join(dirname(dirname(expand_path(__FILE__))), 'lib')
   $:.unshift path
-  path = join(dirname(dirname(expand_path(__FILE__))), 'test')
+  path = join(dirname(dirname(expand_path(__FILE__))), 'spec')
   $:.unshift path
 end
 
