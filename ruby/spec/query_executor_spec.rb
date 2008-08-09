@@ -16,16 +16,17 @@ end
 #require 'rubygems'
 #require 'rspec'
 require 'kwery'
+require 'kwery/adapters/mysql'
 require 'database_config'
 
 
-conn = DB_CONNECTION
+conn = Kwery.connect(HOST, USER, PASS, DBNAME)
 q = Kwery::Query.new(conn)
 #q.debug = true
 now = :current_timestamp
 
 
-describe 'Kwery::Query#execute' do
+describe 'Kwery::Query#insert' do
 
   create_table_option = ' engine=InnoDB'
   drop_table_option = ' if exists'
@@ -291,7 +292,7 @@ describe 'Kwery::Query#transaction' do
         }.should_not raise_error(Exception)
         q.update('members', {:description=>s}, id)  # error
       end
-    }.should raise_error(DB_ERROR_CLASS)  # Unknown column 'description' in 'field list'
+    }.should raise_error(Kwery::SQL_ERROR_CLASS)  # Unknown column 'description' in 'field list'
     q.get('members', id)['desc'].should_not == s
     q.get('members', id)['desc'].should == tsukasa['desc']
   end
