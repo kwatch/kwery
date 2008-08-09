@@ -277,6 +277,17 @@ END
 end
 
 
+describe 'Kwery::Query#select_only' do
+
+  it "returns an array of values, not hashes" do
+    q.select_only('teams', :name).should == ['ryouou', 'sos']
+    arr = q.select_only('members', :name) {|c| c.where(:team_id, 2).order_by(:name) }
+    arr.should == ['Kagami', 'Konata', 'Miyuki', 'Tsukasa']
+  end
+
+end
+
+
 describe 'Kwery::Query#transaction' do
 
   it "commits when no errors" do

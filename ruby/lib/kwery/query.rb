@@ -306,10 +306,10 @@ module Kwery
       return list
     end
 
-    def select_id(table)
+    def select_only(table, column)
       set_table(table)
       yield(@builder) if block_given?
-      sql = @builder.build_select_sql('id')
+      sql = @builder.build_select_sql(column)
       result = execute(sql)
       @builder.clear()
       #return result.collect {|arr| arr.first }
