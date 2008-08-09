@@ -151,9 +151,9 @@ module Kwery
     end
 
     def build_delete_sql(id=nil)
-      sql = "delete #{@_table}"
+      sql = "delete from #{@_table}"
       if !id.nil?
-        sql << " where id = #{escape(v)}"
+        sql << " where id = #{quote_value(id)}"
       elsif @_where
         sql << ' where ' << @_where
       end
@@ -420,8 +420,8 @@ module Kwery
     end
 
     def transaction
-      return execute('transaction') unless block_given?
-      execute('transaction')
+      return execute('start transaction') unless block_given?
+      execute('start transaction')
       yield(@builder)
       return commit()
     rescue Exception => ex
