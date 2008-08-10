@@ -9,7 +9,7 @@
 module Kwery
 
 
-  module SQLBuilder
+  module QueryBuilder
 
     attr_accessor :_table, :_where, :_order_by, :_group_by, :_having, :_limit, :_join
 
@@ -479,7 +479,7 @@ module Kwery
 
 
   class Query
-    include SQLBuilder
+    include QueryBuilder
     include QueryExecutor
     include QueryHelper
 

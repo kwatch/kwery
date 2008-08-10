@@ -13,8 +13,6 @@ File.class_eval do
 end
 
 
-#require 'rubygems'
-#require 'rspec'
 require 'kwery'
 require 'kwery/adapters/mysql'
 require 'database_config'
@@ -26,7 +24,7 @@ q = Kwery::Query.new(conn)
 now = :current_timestamp
 
 
-describe 'Kwery::Query#insert' do
+describe 'Kwery::QueryExecutor#execute' do
 
   create_table_option = ' engine=InnoDB'
   drop_table_option = ' if exists'
@@ -58,7 +56,7 @@ END
 end
 
 
-describe 'Kwery::Query#insert' do
+describe 'Kwery::QueryExecutor#insert' do
 
   it "inserts hash data" do
     q.insert('teams', {:name=>'sos', :desc=>'SOS Brigate'})
@@ -88,7 +86,7 @@ describe 'Kwery::Query#insert' do
 end
 
 
-describe 'Kwery::Query#update' do
+describe 'Kwery::QueryExecutor#update' do
 
   it "updates data with conditions" do
     desc = "Haruhi's brigate"  # contains "'"
@@ -114,7 +112,7 @@ describe 'Kwery::Query#update' do
 end
 
 
-describe 'Kwery::Query#get' do
+describe 'Kwery::QueryExecutor#get' do
 
   it "returns a Hash object" do
     hash = q.get('members', 1)
@@ -140,7 +138,7 @@ describe 'Kwery::Query#get' do
 end
 
 
-describe 'Kwery::Query#get_all' do
+describe 'Kwery::QueryExecutor#get_all' do
 
   it "returns an Array of Hash object" do
     list = q.get_all('members')
@@ -175,7 +173,7 @@ describe 'Kwery::Query#get_all' do
 end
 
 
-describe 'Kwery::Query#select' do
+describe 'Kwery::QueryExecutor#select' do
 
   it "returns enumerable" do
     enum = q.select('members')
@@ -277,7 +275,7 @@ END
 end
 
 
-describe 'Kwery::Query#select_only' do
+describe 'Kwery::QueryExecutor#select_only' do
 
   it "returns an array of values, not hashes" do
     q.select_only('teams', :name).should == ['ryouou', 'sos']
@@ -344,7 +342,7 @@ describe 'Kwery::QweryHelper#map_each_refs' do
 end
 
 
-describe 'Kwery::Query#transaction' do
+describe 'Kwery::QueryExecutor#transaction' do
 
   it "commits when no errors" do
     kagami = q.get('members') {|c| c.where(:name, 'Kagami') }
@@ -376,7 +374,7 @@ describe 'Kwery::Query#transaction' do
 end
 
 
-describe 'Kwery::Query#delete' do
+describe 'Kwery::QueryExecutor#delete' do
 
   it "deletes data specified by id" do
     #q.debug = true
