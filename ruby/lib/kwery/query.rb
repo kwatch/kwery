@@ -443,9 +443,45 @@ module Kwery
   end
 
 
+  module QueryHelper
+
+    def map_each_ref(items, key, attr, ref_table, ref_key='id', not_null=false)
+      list = items.collect {|item| item[key]}
+      list = list.select {|v| v } unless not_null
+      cond = "#{ref_key} in (#{list.join(',')})"
+      ref_items = self.get_all(ref_table) {|c| c.where(cond) }
+      hash = ref_items.index_by(ref_key)
+      items.each do |item|
+        item[attr] = hash[item[key]]
+      end
+      nil
+    end
+
+    def map_each_refs(items, key, attr, ref_table, ref_key='id', not_null=false)
+      list = items.collect {|item| item[key]}
+      list = list.select {|v| v } unless not_null
+      cond = "#{ref_key} in (#{list.join(',')})"
+      ref_items = self.get_all(ref_table) {|c| c.where(cond) }
+      hash = ref_items.group_by(ref_key)
+      if not_null
+        items.each do |item|
+          item[attr] = hash[item[key]] || []
+        end
+      else
+        items.each do |item|
+          item[attr] = (v = item[key]).nil? ? nil : (hash[v] || [])
+        end
+      end
+      nil
+    end
+
+  end
+
+
   class Query
     include SQLBuilder
     include QueryExecutor
+    include QueryHelper
 
     class <<self
       attr_accessor :default_class

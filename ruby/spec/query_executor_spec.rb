@@ -288,6 +288,62 @@ describe 'Kwery::Query#select_only' do
 end
 
 
+describe 'Kwery::QueryHelper#map_each_ref' do
+
+  it "sets referenced item to attribute." do
+    teams = q.get_all('teams')
+    members = q.get_all('members')
+    members.each do |member|
+      member['team'].should == nil
+    end
+    q.map_each_ref(members, 'team_id', 'team', 'teams')
+    members.each do |member|
+      member['team'].should == q.get('teams', member['team_id'])
+    end
+  end
+
+  it "sets nil when referenced item is not found." do
+    teams = q.get_all('teams')
+    members = q.get_all('members')
+    teams.each do |team|
+      team['owner'].should == nil
+    end
+    q.map_each_ref(teams, 'owner_id', 'owner', 'members')
+    teams.find {|team| team['name'] == 'sos' }['owner'].should == q.get('members', 1)
+    teams.find {|team| team['name'] == 'ryouou' }['owner'].should == nil
+  end
+
+end
+
+
+describe 'Kwery::QweryHelper#map_each_refs' do
+
+  it "sets referenced all items to attribute" do
+    teams = q.get_all('teams')
+    members = q.get_all('members')
+    members.each {|member| member['team'].should == nil }
+    q.map_each_refs(members, 'team_id', 'team', 'teams')
+    members.each do |member|
+      member['team'].should be_a_kind_of(Array)
+      member['team'].length.should == 1
+    end
+  end
+
+  it "sets nil when reference column is null." do
+    teams = q.get_all('teams')
+    members = q.get_all('members')
+    teams.each {|team| team['owner'].should == nil }
+    q.map_each_refs(teams, 'owner_id', 'owner', 'members')
+    sos = teams.find {|x| x['name'] == 'sos' }
+    sos['owner'].should be_a_kind_of(Array)
+    sos['owner'].length.should == 1
+    ryouou = teams.find {|x| x['name'] == 'ryouou' }
+    ryouou['owner'].should == nil
+  end
+
+end
+
+
 describe 'Kwery::Query#transaction' do
 
   it "commits when no errors" do
