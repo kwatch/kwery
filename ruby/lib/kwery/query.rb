@@ -134,6 +134,27 @@ module Kwery
       return self
     end
 
+    def where_in(key, arr)
+      #return if arr.empty?
+      cond = "#{quote_keyword(key)} in (#{arr.join(',')})"
+      @_where ? (@_where << ' and ' << cond) : (@_where = cond)
+    end
+
+    def where_between(key, from, to)
+      cond = "#{quote_keyword(key)} between #{quote_value(from)} and #{quote_value(to)}"
+      @_where ? (@_where << ' and ' << cond) : (@_where = cond)
+    end
+
+    def where_is_null(key)
+      cond = "#{quote_keyword(key)} is null"
+      @_where ? (@_where << ' and ' << cond) : (@_where = cond)
+    end
+
+    def where_is_not_null(key)
+      cond = "#{quote_keyword(key)} is not null"
+      @_where ? (@_where << ' and ' << cond) : (@_where = cond)
+    end
+
     def having(key, val=UNDEFINED)
       if @_having
         @_having << ' and ' << _factor(key, val)
