@@ -20,7 +20,7 @@ require 'database_config'
 
 conn = Kwery.connect(HOST, USER, PASS, DBNAME)
 q = Kwery::Query.new(conn)
-#q.debug = true
+#q.stderr = $stderr
 now = :current_timestamp
 
 
@@ -544,7 +544,6 @@ end
 describe 'Kwery::QueryExecutor#delete' do
 
   it "deletes data specified by id" do
-    #q.debug = true
     miyuki = q.get('members') {|c| c.where('name', 'Miyuki') }
     q.delete('members', miyuki['id'])
     q.get('members') {|c| c.where('name', 'Miyuki') }.should == nil
@@ -552,7 +551,6 @@ describe 'Kwery::QueryExecutor#delete' do
   end
 
   it "deletes data specified by block" do
-    #q.debug = true
     ryouou = q.get('teams') {|c| c.where('name', 'ryouou') }
     id = ryouou['id']
     q.delete('members') {|c| c.where('team_id', id) }

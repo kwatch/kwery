@@ -63,16 +63,6 @@ module Kwery
           vals << quote_value(v)
         end
         sql = "insert into #{@_table}(#{keys.join(', ')}) values (#{vals.join(', ')})"
-      #else
-      #  keys = []
-      #  vals = []
-      #  values.instance_variables.each do |name|
-      #    k = name[1..-1]
-      #    v = values.instance_variable_get(name)
-      #    keys << quote_keyword(k)
-      #    vals << quote_value(v)
-      #  end
-      #  sql = "insert into #{@_table}(#{keys.join(', ')}) values (#{vals.join(', ')})"
       else
         raise ArgumentError.new('invalid arguments.')
       end
@@ -87,29 +77,23 @@ module Kwery
         s = values.collect {|k, v| "#{quote_keyword(k)}=#{quote_value(v)}" }.join(', ')
         sql = "update #{@_table} set #{s}"
       end
-      if !id.nil?
-        sql << " where id = #{quote_value(id)}"
-      elsif @_where
-        sql << ' where ' << @_where
+      if    !id.nil? ; sql << " where id = #{quote_value(id)}"
+      elsif @_where  ; sql << ' where ' << @_where
       end
       return sql
     end
 
     def build_delete_sql(id=nil)
       sql = "delete from #{@_table}"
-      if !id.nil?
-        sql << " where id = #{quote_value(id)}"
-      elsif @_where
-        sql << ' where ' << @_where
+      if    !id.nil? ; sql << " where id = #{quote_value(id)}"
+      elsif @_where  ; sql << ' where ' << @_where
       end
       return sql
     end
 
     def where(key, val=UNDEFINED)
-      if @_where
-        @_where << ' and ' << _factor(key, val)
-      else
-        @_where = _factor(key, val)
+      if   @_where ; @_where << ' and ' << _factor(key, val)
+      else         ; @_where = _factor(key, val)
       end
       return self
     end
@@ -156,10 +140,8 @@ module Kwery
     end
 
     def having(key, val=UNDEFINED)
-      if @_having
-        @_having << ' and ' << _factor(key, val)
-      else
-        @_having = _factor(key, val)
+      if   @_having ; @_having << ' and ' << _factor(key, val)
+      else          ; @_having = _factor(key, val)
       end
       return self
     end
@@ -189,8 +171,8 @@ module Kwery
         if val.equal?(UNDEFINED) ;  return key
         elsif val.nil?           ;  return "#{quote_keyword(key)} is null"
         elsif val.is_a?(Array)   ;  return (key % val.collect {|v| quote_value(v) })
-        elsif val.is_a?(Hash)    ;  h = {}; val.each {|k, v| h[k] = quote_value(v) }
-                                    return (key % h)
+        #elsif val.is_a?(Hash)   ;  h = {}; val.each {|k, v| h[k] = quote_value(v) }
+        #                           return (key % h)
         else
           a = key.split(' ', 2)
           return a.length == 1 ? "#{quote_keyword(key)} = #{quote_value(val)}" \
@@ -199,8 +181,8 @@ module Kwery
       elsif key.is_a?(Symbol)
         if val.equal?(UNDEFINED) ;  raise ArgumentError.new("value is required.")
         elsif val.nil?           ;  return "#{quote_keyword(key)} is null"
-        elsif val.is_a?(Array)   ;  raise ArgumentError.new("array is not acceptable.")
-        elsif val.is_a?(Hash)    ;  raise ArgumentError.new("hash is not acceptable.")
+        elsif val.is_a?(Array)   ;  raise ArgumentError.new("array is not allowed.")
+        elsif val.is_a?(Hash)    ;  raise ArgumentError.new("hash is not allowed.")
         else                     ;  return "#{quote_keyword(key)} = #{quote_value(val)}"
         end
       elsif key.is_a?(Hash)
@@ -274,7 +256,7 @@ module Kwery
 
   module QueryExecutor
 
-    attr_accessor :conn, :builder, :debug, :table_prefix
+    attr_accessor :conn, :builder, :stderr, :table_prefix
 
     def set_table(table)
       @builder._table = to_table_name(table)
@@ -426,8 +408,9 @@ module Kwery
     end
 
     def execute(sql)
-      $stderr.puts sql if @debug
-      return @conn.query(sql)
+      #@stderr << sql << "\n" if @stderr
+      #return @conn.query(sql)
+      raise NotImplementedError.new("#{self.class.name}#execute(): not implemented yet.")
     end
 
     def insert_object(obj)

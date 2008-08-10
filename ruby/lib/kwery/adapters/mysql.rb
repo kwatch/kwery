@@ -81,12 +81,12 @@ module Kwery
     end
 
     def execute(sql)
-      $stderr.puts sql if @debug
+      @stderr << sql << "\n" if @stderr
       return @conn.query(sql)
     end if HAS_MOTTO
 
     def execute(sql)
-      $stderr.puts sql if @debug
+      @stderr << sql << "\n" if @stderr
       #return @conn.query(sql)
       stmt = @conn.prepare(sql)
       stmt.execute()
