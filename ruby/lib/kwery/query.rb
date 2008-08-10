@@ -261,8 +261,9 @@ module Kwery
     end
 
     def _build_join(phrase, join_table, column, primary_key)
+      table_name = to_table_name(join_table)
       @_join ||= ''
-      @_join << " #{phrase} #{join_table} on #{@_table}.#{column} = #{join_table}.#{primary_key}"
+      @_join << " #{phrase} #{table_name} on #{@_table}.#{column} = #{table_name}.#{primary_key}"
       #arr = join_table.split(' ')
       #@_join << " #{phrase} #{arr.first} on #{@_table}.#{column} = #{arr.last}.#{primary_key}"
     end
@@ -275,19 +276,20 @@ module Kwery
 
     attr_accessor :conn, :builder, :debug, :table_prefix
 
-    def set_table_name(table)
-      @builder._table = @table_prefix ? @table_prefix + table : table
-    end
-    protected :set_table_name
-
     def set_table(table)
-      if    table.is_a?(String) ; set_table_name(table)
-      elsif table.is_a?(Class)  ; set_table_name(table.__table__)
-      elsif table.is_a?(Model)  ; raise ArgumentError.new("Model not allowed.")
-      else                      ; raise ArgumentError.new("invalid table object.")
-      end
+      @builder._table = to_table_name(table)
     end
-    private :set_table
+    protected :set_table
+
+    def to_table_name(table)
+      t = nil
+      if    table.is_a?(String) ;  t = table
+      elsif table.is_a?(Class)  ;  t = table.__table__
+      elsif table.is_a?(Model)  ;  raise ArgumentError.new("Model not allowed.")
+      else                      ;  raise ArgumentError.new("invalid table object.")
+      end
+      return @table_prefix ? @table_prefix + t : t
+    end
 
     def get(table, id=nil)
       set_table(table)
@@ -384,8 +386,9 @@ module Kwery
       return @conn.insert_id
     end
 
-    def update(table, values, id=nil)
+    def update(table, values=nil, id=nil)
       return table.__update__(self) if table.is_a?(Model)
+      raise ArgumentError.new("update values are required.") if values.nil?
       set_table(table)
       yield(@builder) if block_given?
       unless id || @_where
