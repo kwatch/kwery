@@ -24,6 +24,21 @@ q = Kwery::Query.new(conn)
 now = :current_timestamp
 
 
+class Team
+  include Kwery::Model
+  set_table_name 'teams'
+  add_columns :id, :name, :desc, :owner_id, :created_at, :updated_at
+  attr_accessor :owner
+end
+
+class Member
+  include Kwery::Model
+  set_table_name 'members'
+  add_columns :id, :name, :desc, :team_id, :created_at, :updated_at
+  attr_accessor :team
+end
+
+
 describe 'Kwery::QueryExecutor#execute' do
 
   create_table_option = ' engine=InnoDB'
@@ -58,28 +73,44 @@ end
 
 describe 'Kwery::QueryExecutor#insert' do
 
+  sos_id = nil
   it "inserts hash data" do
     q.insert('teams', {:name=>'sos', :desc=>'SOS Brigate'})
-    id = q.last_insert_id
+    sos_id = q.last_insert_id
     #
-    q.insert('members', {:name=>'Haruhi', :team_id=>id, :created_at=>now, :updated_at=>now})
-    q.insert('members', {:name=>'Mikuru', :team_id=>id, :created_at=>Time.now, :updated_at=>Time.now})
-    q.insert('members', {:name=>'Yuki', :team_id=>id, :created_at=>:'now()', :updated_at=>:'now()'})
+    q.insert('members', {:name=>'Haruhi', :team_id=>sos_id, :created_at=>now, :updated_at=>now})
+    #q.insert('members', {:name=>'Mikuru', :team_id=>sos_id, :created_at=>Time.now, :updated_at=>Time.now})
+    #q.insert('members', {:name=>'Yuki', :team_id=>sos_id, :created_at=>:'now()', :updated_at=>:'now()'})
     #
     q.select('teams').length.should == 1
+    q.select('members').length.should == 1
+  end
+
+  it "can take Model class" do
+    q.insert(Member, {:name=>'Mikuru', :team_id=>sos_id, :created_at=>Time.now, :updated_at=>Time.now})
+    q.insert(Member, {:name=>'Yuki', :team_id=>sos_id, :created_at=>:'now()', :updated_at=>:'now()'})
     q.select('members').length.should == 3
   end
 
+  ryouou_id = nil
   it "inserts array data" do
     q.insert('teams', [nil, 'ryouou', 'Ryouou Gakuen High School', nil, now, now])
-    id = q.last_insert_id
+    ryouou_id = q.last_insert_id
     #
-    q.insert('members', [nil, 'Konata',  nil, id, now, now])
-    q.insert('members', [nil, 'Kagami',  nil, id, now, now])
-    q.insert('members', [nil, 'Tsukasa', nil, id, now, now])
-    q.insert('members', [nil, 'Miyuki',  nil, id, now, now])
+    q.insert('members', [nil, 'Konata',  nil, ryouou_id, now, now])
+    q.insert('members', [nil, 'Kagami',  nil, ryouou_id, now, now])
+    #q.insert('members', [nil, 'Tsukasa',  nil, ryouou_id, now, now])
+    #q.insert('members', [nil, 'Miyuki',  nil, ryouou_id, now, now])
     #
     q.select('teams').length.should == 2
+    q.select('members').length.should == 5
+  end
+
+  it "can talke model object" do
+    tsukasa = Member.new(nil, 'Tsukasa', nil, ryouou_id, Time.now, ':now()')
+    q.insert_object(tsukasa)
+    miyuki = Member.new(:name=>'Miyuki', :team_id=>ryouou_id)
+    q.insert_object(miyuki)
     q.select('members').length.should == 7
   end
 
@@ -109,6 +140,22 @@ describe 'Kwery::QueryExecutor#update' do
     proc { q.update('teams', {:owner_id=>1}) }.should raise_error(ArgumentError, msg)
   end
 
+  it "can take Model class" do
+    miyuki = q.get(Member) {|c| c.where('name', 'Miyuki') }
+    miyuki.desc.should == nil
+    miyuki.desc = 'Miyukichi'
+    q.update(Member, {:desc=>miyuki.desc}, miyuki.id)
+    q.get('members', miyuki.id)['desc'].should == miyuki.desc
+  end
+
+  it "can take model object" do
+    tsukasa = q.get(Member) {|c| c.where('name', 'Tsukasa') }
+    tsukasa.desc.should == nil
+    tsukasa.desc = 'Barusamikosu'
+    q.update(tsukasa)
+    q.get('members', tsukasa.id)['desc'].should == tsukasa.desc
+  end
+
 end
 
 
@@ -133,6 +180,16 @@ describe 'Kwery::QueryExecutor#get' do
     hash.should == nil
     hash = q.get('members') {|c| c.where(:name, 'Minoru') }
     hash.should == nil
+  end
+
+  it "can take Model class" do
+    sos = q.get(Team, 1)
+    sos.should be_a_kind_of(Team)
+    sos.name.should == 'sos'
+    #
+    kagami = q.get(Member) {|c| c.where(:name, 'Kagami') }
+    kagami.should be_a_kind_of(Member)
+    kagami.name.should == 'Kagami'
   end
 
 end
@@ -168,6 +225,24 @@ describe 'Kwery::QueryExecutor#get_all' do
     list = q.get_all('members') {|c| c.where(:team_id, 999) }
     list.should be_a_kind_of(Array)
     list.length.should == 0
+  end
+
+  it "can take Model class" do
+    teams = q.get_all(Team)
+    teams.each do |team|
+      team.should be_a_kind_of(Team)
+      case team['id'].to_i
+      when 1 ; team.name == 'sos'
+      when 2 ; team.name == 'ryouou'
+      end
+    end
+    #
+    ryouou_id = 2
+    members = q.get_all(Member) {|c| c.where(:team_id, ryouou_id) }
+    members.each do |member|
+      member.should be_a_kind_of(Member)
+      member.team_id.should == ryouou_id
+    end
   end
 
 end
@@ -272,6 +347,14 @@ END
     arr[0].should be_a_kind_of(Array)
   end
 
+  it "can take Model class" do
+    t1 = q.to_table_name(Member)
+    t2 = q.to_table_name(Team)
+    enum = q.select(Member, t1+'.*') {|c| c.left_outer_join(Team, :team_id).where("#{t2}.name", 'ryouou').order_by(t1+'.id') }
+    arr = enum.to_a
+    arr.length.should == 4
+  end
+
 end
 
 
@@ -280,6 +363,12 @@ describe 'Kwery::QueryExecutor#select_only' do
   it "returns an array of values, not hashes" do
     q.select_only('teams', :name).should == ['ryouou', 'sos']
     arr = q.select_only('members', :name) {|c| c.where(:team_id, 2).order_by(:name) }
+    arr.should == ['Kagami', 'Konata', 'Miyuki', 'Tsukasa']
+  end
+
+  it "can take Model class" do
+    q.select_only(Team, :name) {|c| c.order_by(:name) }.should == ['ryouou', 'sos']
+    arr = q.select_only(Member, :name) {|c| c.where(:team_id, 2).order_by(:name) }
     arr.should == ['Kagami', 'Konata', 'Miyuki', 'Tsukasa']
   end
 
@@ -311,6 +400,21 @@ describe 'Kwery::QueryHelper#solve_belongs_to' do
     teams.find {|team| team['name'] == 'ryouou' }['owner'].should == nil
   end
 
+  it "can take array of model object" do
+    teams = q.get_all(Team)
+    teams[0].should be_a_kind_of(Team)
+    members = q.get_all(Member)
+    members[0].should be_a_kind_of(Member)
+    members.each do |member|
+      member.team.should == nil
+    end
+    q.solve_belongs_to(members, :team, :team_id, Team)
+    members.each do |member|
+      member.team.id.should == q.get(Team, member.team_id).id
+      member.team.name.should == q.get(Team, member.team_id).name
+    end
+  end
+
 end
 
 
@@ -327,6 +431,25 @@ describe 'Kwery::QueryHelper#solve_has_one' do
     members.each do |member|
       if member['name'] == 'Haruhi'
         member['owns'].should == q.get('teams') {|c| c.where('name', 'sos') }
+      else
+        member['owns'].should == nil
+      end
+    end
+  end
+
+  it "can take model objects and Model class" do
+    teams = q.get_all(Team)
+    members = q.get_all(Member)
+    members.each do |member|
+      member.team.should == nil
+    end
+    members.each {|member| member['owns'].should == nil }
+    q.solve_has_one(members, :owns, :owner_id, Team)
+    members.each do |member|
+      if member.name == 'Haruhi'
+        haruhi = q.get(Team) {|c| c.where(:name, 'sos') }
+        member['owns'].id.should == haruhi.id
+        member['owns'].name.should == haruhi.name
       else
         member['owns'].should == nil
       end
@@ -364,6 +487,21 @@ describe 'Kwery::QweryHelper#solve_has_many' do
         member['owns'][0]['name'] == 'sos'
       else
         member['owns'].should == []
+      end
+    end
+  end
+
+  it "can take model objects and Model class" do
+    teams = q.get_all(Team)
+    members = q.get_all(Member)
+    teams.each {|team| team[:members].should == nil }
+    q.solve_has_many(teams, :members, :team_id, Member) {|c| c.order_by(:id) }
+    teams.each do |team|
+      team[:members].should be_a_kind_of(Array)
+      if team.name == 'sos'
+        team[:members].collect {|x| x.name }.should == ['Haruhi', 'Mikuru', 'Yuki']
+      elsif team.name == 'ryouou'
+        team[:members].collect {|x| x.name }.should == ['Konata', 'Kagami', 'Tsukasa', 'Miyuki']
       end
     end
   end
@@ -427,14 +565,35 @@ describe 'Kwery::QueryExecutor#delete' do
     proc { q.delete('teams') }.should raise_error(ArgumentError, msg)
   end
 
+  it "can take Model class" do
+    q.get_all(Member).length == 2
+    q.delete(Member) {|c| c.where(:name, 'ryouou') }
+    q.get_all(Member).length == 1
+    q.get_all(Member).first['name'] == 'sos'
+  end
+
+  it "can take model object" do
+    members = q.get_all(Member)
+    members.length.should == 3
+    q.delete(members.first)
+    q.get_all(Member).length.should == 2
+  end
+
 end
 
 
 describe "Kwery::Qwery#delete_all" do
 
   it "deletes all data" do
+    q.get_all('members').length.should > 0
     q.delete_all('members')
     q.get_all('members').length.should == 0
+  end
+
+  it "can take Model class" do
+    q.get_all('teams').length.should > 0
+    q.delete_all(Team)
+    q.get_all('teams').length.should == 0
   end
 
 end
