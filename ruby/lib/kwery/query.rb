@@ -445,45 +445,42 @@ module Kwery
 
   module QueryHelper
 
-    def solve_belongs_to(items, from_attr, from_key, to_table, to_key='id', not_null=false)
-      #solve_has_one(items, from_attr, to_key, to_table, from_key, not_null)
-      list = items.collect {|item| item[from_key]}
+    def collect_ref_items(items, local_key, table, remote_key, not_null=false)
+      list = items.collect {|item| item[local_key] }
       list = list.select {|v| v } unless not_null
       yield(self) if block_given?
-      cond = "#{to_key} in (#{list.join(',')})"
-      ref_items = self.get_all(to_table) {|c| c.where(cond) }
+      cond = "#{remote_key} in (#{list.join(',')})"
+      ref_items = self.get_all(table) {|c| c.where(cond) }
+      return ref_items
+    end
+
+    def solve_belongs_to(items, from_attr, from_key, to_table, to_key='id', not_null=false)
+      #solve_has_one(items, from_attr, to_key, to_table, from_key, not_null)
+      ref_items = collect_ref_items(items, from_key, to_table, to_key);
       hash = ref_items.index_by(to_key)
       items.each do |item|
         item[from_attr] = hash[item[from_key]]
         #v = item[from_key]
         #item[from_attr] = hash[v]
-        #hash[v][to_attr] = item if hash[v]
+        #hash[v][to_attr] = item if to_attr && hash[v]
       end
       nil
     end
 
     def solve_has_one(items, attr, from_key, from_table, to_key='id', not_null=false)
-      solve_belongs_to(items, attr, to_key, from_table, from_key, not_null)
-      #list = items.collect {|item| item[to_key] }
-      #list = list.select {|v| v } unless not_null
-      #yield(self) if block_given?
-      #cond = "#{from_key} in (#{list.join(',')})"
-      #ref_items = self.get_all(from_table) {|c| c.where(cond) }
-      #hash = ref_items.index_by(from_key)
-      #items.each do |item|
-      #  item[attr] = hash[item[to_key]]
-      #  #v = item[to_key]
-      #  #item[to_attr] = hash[v]
-      #  #hash[v][from_attr] = item if hash[v]
-      #end
+      #solve_belongs_to(items, attr, to_key, from_table, from_key, not_null)
+      ref_items = collect_ref_items(items, to_key, from_table, from_key)
+      hash = ref_items.index_by(from_key)
+      items.each do |item|
+        item[attr] = hash[item[to_key]]
+        #v = item[to_key]
+        #item[to_attr] = hash[v]
+        #hash[v][from_attr] = item if from_attr && hash[v]
+      end
     end
 
     def solve_has_many(items, attr, from_key, from_table, to_key='id', not_null=false)
-      list = items.collect {|item| item[to_key] }
-      list = list.select {|v| v } unless not_null
-      yield(self) if block_given?
-      cond = "#{from_key} in (#{list.join(',')})"
-      ref_items = self.get_all(from_table) {|c| c.where(cond) }
+      ref_items = collect_ref_items(items, to_key, from_table, from_key, not_null)
       hash = ref_items.group_by(from_key)
       if not_null
         items.each do |item|
