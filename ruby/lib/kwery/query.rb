@@ -254,53 +254,87 @@ module Kwery
 
     attr_accessor :conn, :builder, :debug, :table_prefix
 
-    def set_table(table)
+    def set_table_name(table)
       @builder._table = @table_prefix ? @table_prefix + table : table
     end
 
+    def set_table(table)
+      if    table.is_a?(String) ; set_table_name(table)           ; return true
+      elsif table.is_a?(Class)  ; set_table_name(table.__table__) ; return false
+      elsif table.is_a?(Model)  ; raise ArgumentError.new("Model not allowed.")
+      else                      ; raise ArgumentError.new("invalid table object.")
+      end
+    end
+
     def get(table, id=nil)
-      set_table(table)
+      is_str = set_table(table)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql('*', id)
       result = execute(sql)
       @builder.clear()
-      hash = result.fetch_hash()
+      if is_str
+        ret = result.fetch_hash()
+      else
+        #ret = result.fetch_object(table)
+        ret = table.new(result.fetch_hash())
+        ret.__selected__(self)
+      end
       result.free() if @auto_free
-      return hash
+      return ret
     end
 
     def get_all(table, key=UNDEFINED, val=UNDEFINED)
-      set_table(table)
+      is_str = set_table(table)
       @builder.where(key, val) unless key.equal?(UNDEFINED)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql('*')
       result = execute(sql)
       @builder.clear()
       list = []
-      #while hash = result.fetch_hash()
-      #  list << hash
-      #end
-      result.each_hash {|hash| list << hash }
+      if is_str
+        result.each_hash {|hash| list << hash }
+      else
+        #result.each_object(table) {|obj| list << obj }
+        result.each_hash do |hash|
+          list << (obj = table.new(hash))
+          obj.__selected__(self)
+        end
+      end
       result.free() if @auto_free
       return list
     end
 
-    def select(table, columns=nil, klass=Hash)
-      set_table(table)
+    def select(table, columns=nil, klass=nil)
+      is_str = set_table(table)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql(columns)
       result = execute(sql)
       @builder.clear()
       list = []
-      if klass == Hash
-        result.each_hash {|hash| list << hash }
-      elsif klass == Array
-        result.each_array {|arr| list << arr }
+      if klass.nil?
+        if is_str
+          result.each_hash {|hash| list << hash }
+        else
+          #result.each_object(table) {|obj| list << obj }
+          result.each_hash do |hash|
+            list << (obj = table.new(hash))
+            obj.__selected__(self)
+          end
+        end
       else
-        result.each_hash do |hash|
-          list << (obj = klass.new)
-          #hash.each {|k, v| obj.instance_variable_set("@#{k}", v) }
-          hash.each {|k, v| obj.__send__("#{k}=", v) }
+        if klass == Hash
+          result.each_hash {|hash| list << hash }
+        elsif klass == Array
+          result.each_array {|arr| list << arr }
+        else
+          #result.each_object(klass) {|obj| list << obj }
+          #result.each_hash(klass) {|hash| list << klass.new(hash) }
+          result.each_hash do |hash|
+            list << (obj = klass.new)
+            hash.each {|k, v| obj.instance_variable_set("@#{k}", v) }
+            obj.__selected__(self)
+            #hash.each {|k, v| obj.__send__("#{k}=", v) }
+          end
         end
       end
       result.free() if @auto_free
@@ -321,7 +355,8 @@ module Kwery
     end
 
     def insert(table, values)
-      set_table(table)
+      return table.__insert__(self) if table.is_a?(Model)
+      is_str = set_table(table)
       sql = @builder.build_insert_sql(values)
       @builder.clear()
       return execute(sql)
@@ -332,6 +367,7 @@ module Kwery
     end
 
     def update(table, values, id=nil)
+      return table.__update__(self) if table.is_a?(Model)
       set_table(table)
       yield(@builder) if block_given?
       unless id || @_where
@@ -350,6 +386,7 @@ module Kwery
     end
 
     def delete(table, id=nil)
+      return table.__delete__(self) if table.is_a?(Model)
       set_table(table)
       yield(@builder) if block_given?
       unless id || @_where
@@ -370,6 +407,18 @@ module Kwery
     def execute(sql)
       $stderr.puts sql if @debug
       return @conn.query(sql)
+    end
+
+    def insert_object(obj)
+      obj.__insert__(self)
+    end
+
+    def update_object(obj)
+      obj.__update__(self)
+    end
+
+    def delete_object(obj)
+      obj.__delete__(self)
     end
 
     def transaction
