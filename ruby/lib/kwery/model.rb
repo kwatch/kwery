@@ -22,6 +22,9 @@ module Kwery
 
     def self.included(klass)
       klass.class_eval do
+        arr = []
+        klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[^A-Z]+)/) {|s| arr << s.downcase }
+        @__table__ = arr.join('_')
         @__columns__ = []
         class <<self
           attr_accessor :__table__
