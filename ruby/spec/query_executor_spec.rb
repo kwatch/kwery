@@ -286,7 +286,7 @@ describe 'Kwery::QueryExecutor#select_only' do
 end
 
 
-describe 'Kwery::QueryHelper#map_each_ref' do
+describe 'Kwery::QueryHelper#solve_belongs_to' do
 
   it "sets referenced item to attribute." do
     teams = q.get_all('teams')
@@ -294,7 +294,7 @@ describe 'Kwery::QueryHelper#map_each_ref' do
     members.each do |member|
       member['team'].should == nil
     end
-    q.map_each_ref(members, 'team_id', 'team', 'teams')
+    q.solve_belongs_to(members, 'team', 'team_id', 'teams')
     members.each do |member|
       member['team'].should == q.get('teams', member['team_id'])
     end
@@ -306,7 +306,7 @@ describe 'Kwery::QueryHelper#map_each_ref' do
     teams.each do |team|
       team['owner'].should == nil
     end
-    q.map_each_ref(teams, 'owner_id', 'owner', 'members')
+    q.solve_belongs_to(teams, 'owner', 'owner_id', 'members')
     teams.find {|team| team['name'] == 'sos' }['owner'].should == q.get('members', 1)
     teams.find {|team| team['name'] == 'ryouou' }['owner'].should == nil
   end
@@ -314,29 +314,58 @@ describe 'Kwery::QueryHelper#map_each_ref' do
 end
 
 
-describe 'Kwery::QweryHelper#map_each_refs' do
+describe 'Kwery::QueryHelper#solve_has_one' do
+
+  it "sets referenced item to attribute." do
+    teams = q.get_all('teams')
+    members = q.get_all('members')
+    members.each do |member|
+      member['team'].should == nil
+    end
+    members.each {|member| member['owns'].should == nil }
+    q.solve_has_one(members, 'owns', 'owner_id', 'teams')
+    members.each do |member|
+      if member['name'] == 'Haruhi'
+        member['owns'].should == q.get('teams') {|c| c.where('name', 'sos') }
+      else
+        member['owns'].should == nil
+      end
+    end
+  end
+
+end
+
+
+describe 'Kwery::QweryHelper#solve_has_many' do
 
   it "sets referenced all items to attribute" do
     teams = q.get_all('teams')
     members = q.get_all('members')
-    members.each {|member| member['team'].should == nil }
-    q.map_each_refs(members, 'team_id', 'team', 'teams')
-    members.each do |member|
-      member['team'].should be_a_kind_of(Array)
-      member['team'].length.should == 1
+    teams.each {|team| team['members'].should == nil }
+    q.solve_has_many(teams, 'members', 'team_id', 'members') {|c| c.order_by(:id) }
+    teams.each do |team|
+      team['members'].should be_a_kind_of(Array)
+      if team['name'] == 'sos'
+        team['members'].collect {|x| x['name']}.should == ['Haruhi', 'Mikuru', 'Yuki']
+      elsif team['name'] == 'ryouou'
+        team['members'].collect {|x| x['name']}.should == ['Konata', 'Kagami', 'Tsukasa', 'Miyuki']
+      end
     end
   end
 
-  it "sets nil when reference column is null." do
+  it "sets empty array when reference data is not found." do
     teams = q.get_all('teams')
     members = q.get_all('members')
-    teams.each {|team| team['owner'].should == nil }
-    q.map_each_refs(teams, 'owner_id', 'owner', 'members')
-    sos = teams.find {|x| x['name'] == 'sos' }
-    sos['owner'].should be_a_kind_of(Array)
-    sos['owner'].length.should == 1
-    ryouou = teams.find {|x| x['name'] == 'ryouou' }
-    ryouou['owner'].should == nil
+    members.each {|member| member['owns'].should == nil }
+    q.solve_has_many(members, 'owns', 'owner_id', 'teams')
+    members.each do |member|
+      if member['name'] == 'Haruhi'
+        member['owns'].should be_a_kind_of(Array)
+        member['owns'][0]['name'] == 'sos'
+      else
+        member['owns'].should == []
+      end
+    end
   end
 
 end

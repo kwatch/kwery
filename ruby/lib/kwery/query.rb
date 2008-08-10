@@ -445,31 +445,51 @@ module Kwery
 
   module QueryHelper
 
-    def map_each_ref(items, key, attr, ref_table, ref_key='id', not_null=false)
-      list = items.collect {|item| item[key]}
+    def solve_belongs_to(items, attr, from_key, to_table, to_key='id', not_null=false)
+      list = items.collect {|item| item[from_key]}
       list = list.select {|v| v } unless not_null
-      cond = "#{ref_key} in (#{list.join(',')})"
-      ref_items = self.get_all(ref_table) {|c| c.where(cond) }
-      hash = ref_items.index_by(ref_key)
+      yield(self) if block_given?
+      cond = "#{to_key} in (#{list.join(',')})"
+      ref_items = self.get_all(to_table) {|c| c.where(cond) }
+      hash = ref_items.index_by(to_key)
       items.each do |item|
-        item[attr] = hash[item[key]]
+        item[attr] = hash[item[from_key]]
+        #v = item[from_key]
+        #item[from_attr] = hash[v]
+        #hash[v][to_attr] = item if hash[v]
       end
       nil
     end
 
-    def map_each_refs(items, key, attr, ref_table, ref_key='id', not_null=false)
-      list = items.collect {|item| item[key]}
+    def solve_has_one(items, attr, from_key, from_table, to_key='id', not_null=false)
+      list = items.collect {|item| item[to_key] }
       list = list.select {|v| v } unless not_null
-      cond = "#{ref_key} in (#{list.join(',')})"
-      ref_items = self.get_all(ref_table) {|c| c.where(cond) }
-      hash = ref_items.group_by(ref_key)
+      yield(self) if block_given?
+      cond = "#{from_key} in (#{list.join(',')})"
+      ref_items = self.get_all(from_table) {|c| c.where(cond) }
+      hash = ref_items.index_by(from_key)
+      items.each do |item|
+        item[attr] = hash[item[to_key]]
+        #v = item[to_key]
+        #item[to_attr] = hash[v]
+        #hash[v][from_attr] = item if hash[v]
+      end
+    end
+
+    def solve_has_many(items, attr, from_key, from_table, to_key='id', not_null=false)
+      list = items.collect {|item| item[to_key] }
+      list = list.select {|v| v } unless not_null
+      yield(self) if block_given?
+      cond = "#{from_key} in (#{list.join(',')})"
+      ref_items = self.get_all(from_table) {|c| c.where(cond) }
+      hash = ref_items.group_by(from_key)
       if not_null
         items.each do |item|
-          item[attr] = hash[item[key]] || []
+          item[attr] = hash[item[to_key]] || []
         end
       else
         items.each do |item|
-          item[attr] = (v = item[key]).nil? ? nil : (hash[v] || [])
+          item[attr] = (v = item[to_key]).nil? ? nil : (hash[v] || [])
         end
       end
       nil
