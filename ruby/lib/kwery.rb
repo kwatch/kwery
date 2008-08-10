@@ -17,4 +17,6 @@ module Kwery
 
 end
 
+require 'kwery/helper'
 require 'kwery/query'
+require 'kwery/model'

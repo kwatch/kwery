@@ -257,24 +257,27 @@ module Kwery
     def set_table_name(table)
       @builder._table = @table_prefix ? @table_prefix + table : table
     end
+    protected :set_table_name
 
     def set_table(table)
-      if    table.is_a?(String) ; set_table_name(table)           ; return true
-      elsif table.is_a?(Class)  ; set_table_name(table.__table__) ; return false
+      if    table.is_a?(String) ; set_table_name(table)
+      elsif table.is_a?(Class)  ; set_table_name(table.__table__)
       elsif table.is_a?(Model)  ; raise ArgumentError.new("Model not allowed.")
       else                      ; raise ArgumentError.new("invalid table object.")
       end
     end
+    private :set_table
 
     def get(table, id=nil)
-      is_str = set_table(table)
+      set_table(table)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql('*', id)
       result = execute(sql)
       @builder.clear()
-      if is_str
+      if table.is_a?(String)
         ret = result.fetch_hash()
       else
+        #assert table.is_a?(Class)
         #ret = result.fetch_object(table)
         ret = table.new(result.fetch_hash())
         ret.__selected__(self)
@@ -283,56 +286,50 @@ module Kwery
       return ret
     end
 
+    def _collect_models(result, model_class, list=[])  # :nodoc:
+      result.each_hash do |hash|
+        list << (model = model_class.new(hash))
+        model.__selected__(self)
+      end
+      return list
+    end
+    protected :_collect_models
+
     def get_all(table, key=UNDEFINED, val=UNDEFINED)
-      is_str = set_table(table)
+      set_table(table)
       @builder.where(key, val) unless key.equal?(UNDEFINED)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql('*')
       result = execute(sql)
       @builder.clear()
       list = []
-      if is_str
-        result.each_hash {|hash| list << hash }
-      else
-        #result.each_object(table) {|obj| list << obj }
-        result.each_hash do |hash|
-          list << (obj = table.new(hash))
-          obj.__selected__(self)
-        end
+      if table.is_a?(String) ; result.each_hash {|hash| list << hash }
+      else                   ; _collect_models(result, table, list)
       end
       result.free() if @auto_free
       return list
     end
 
     def select(table, columns=nil, klass=nil)
-      is_str = set_table(table)
+      set_table(table)
       yield(@builder) if block_given?
       sql = @builder.build_select_sql(columns)
       result = execute(sql)
       @builder.clear()
       list = []
       if klass.nil?
-        if is_str
-          result.each_hash {|hash| list << hash }
-        else
-          #result.each_object(table) {|obj| list << obj }
-          result.each_hash do |hash|
-            list << (obj = table.new(hash))
-            obj.__selected__(self)
-          end
+        if    table.is_a?(String)   ; result.each_hash {|hash| list << hash }
+        else                        ; _collect_models(result, table, list)
         end
       else
-        if klass == Hash
-          result.each_hash {|hash| list << hash }
-        elsif klass == Array
-          result.each_array {|arr| list << arr }
+        if    klass == Hash         ; result.each_hash {|hash| list << hash }
+        elsif klass == Array        ; result.each_array {|arr| list << arr }
+        elsif klass.include?(Model) ; _collect_models(result, table, list)
         else
           #result.each_object(klass) {|obj| list << obj }
-          #result.each_hash(klass) {|hash| list << klass.new(hash) }
           result.each_hash do |hash|
             list << (obj = klass.new)
             hash.each {|k, v| obj.instance_variable_set("@#{k}", v) }
-            obj.__selected__(self)
             #hash.each {|k, v| obj.__send__("#{k}=", v) }
           end
         end
@@ -356,7 +353,7 @@ module Kwery
 
     def insert(table, values)
       return table.__insert__(self) if table.is_a?(Model)
-      is_str = set_table(table)
+      set_table(table)
       sql = @builder.build_insert_sql(values)
       @builder.clear()
       return execute(sql)
