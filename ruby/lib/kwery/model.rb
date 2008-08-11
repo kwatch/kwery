@@ -75,12 +75,16 @@ module Kwery
           self.class_eval(defs.join)
         end
         def self.create_table(table_name, options={}, &block)
+          require 'kwery/table'
           self.set_table_name(table_name)
           @__options__ = options
           builder = TableBuilder.new(Query.new(nil))
           @__columns__ = builder.define_columns(&block)
+          @__column_names__ = @__columns__.collect {|c| c._name }
+          attr_accessor *@__column_names__
         end
         def self.to_sql(query=nil)
+          require 'kwery/table'
           query ||= Query.new(nil)
           builder = TableBuilder.new(nil)
           builder.table_name = @__table__
