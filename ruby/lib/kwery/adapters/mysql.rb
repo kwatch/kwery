@@ -175,6 +175,8 @@ module Kwery
 
 
   SQL_ERROR_CLASS = ::Mysql::Error
+  TIMESTAMP_CLASS = ::Mysql::Time
+  DATE_CLASS = ::Mysql::Time
 
 
 end
