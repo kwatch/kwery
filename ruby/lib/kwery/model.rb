@@ -25,10 +25,10 @@ module Kwery
         arr = []
         klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[^A-Z]+)/) {|s| arr << s.downcase }
         @__table__ = arr.join('_')
-        @__columns__ = []
+        @__column_names__ = []
         class <<self
           attr_accessor :__table__
-          attr_reader :__columns__
+          attr_reader :__column_names__
         end
         def self.set_table_name(table_name)
           @__table__ = table_name
@@ -40,8 +40,8 @@ module Kwery
           ## pass
         end
         def self.add_columns(*column_names)
-          @__columns__ ||= []
-          @__columns__.concat(column_names.collect {|col| col.to_sym })
+          @__column_names__ ||= []
+          @__column_names__.concat(column_names.collect {|col| col.to_sym })
           attr_accessor *column_names
           defs = column_names.collect do |col|
             <<-END
@@ -52,8 +52,8 @@ module Kwery
             END
           end
           defs << <<-END
-              has_created_at = @__columns__.include?(:created_at)
-              has_updated_at = @__columns__.include?(:updated_at)
+              has_created_at = @__column_names__.include?(:created_at)
+              has_updated_at = @__column_names__.include?(:updated_at)
               if has_created_at && has_updated_at
                 def __before_insert__(values)
                   values[:created_at] = @created_at = __current_timestamp__()
@@ -83,7 +83,7 @@ module Kwery
           instance_variable_set("@#{name}", val)
         end
       else
-        args.zip(self.class.__columns__) do |val, col|
+        args.zip(self.class.__column_names__) do |val, col|
           self.instance_variable_set("@#{col}", val)
         end
       end
@@ -91,14 +91,14 @@ module Kwery
 
     def to_hash
       hash = {}
-      self.class.__columns__.each do |name|
+      self.class.__column_names__.each do |name|
         hash[name] = instance_variable_get("@#{name}")
       end
       return hash
     end
 
     def to_array
-      return self.class.__columns__.collect {|name| instance_variable_get("@#{name}") }
+      return self.class.__column_names__.collect {|name| instance_variable_get("@#{name}") }
     end
 
     def __selected__(query)
