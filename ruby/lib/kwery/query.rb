@@ -284,8 +284,11 @@ module Kwery
       else
         #assert table.is_a?(Class)
         #ret = result.fetch_object(table)
-        ret = table.new(result.fetch_hash())
-        ret.__selected__(self)
+        ret = result.fetch_hash()
+        if ret
+          ret = table.new(ret)
+          ret.__selected__(self)
+        end
       end
       result.free() if @auto_free
       return ret
@@ -293,8 +296,12 @@ module Kwery
 
     def _collect_models(result, model_class, list=[])  # :nodoc:
       result.each_hash do |hash|
-        list << (model = model_class.new(hash))
-        model.__selected__(self)
+        if hash
+          list << (model = model_class.new(hash))
+          model.__selected__(self)
+        else
+          list << hash
+        end
       end
       return list
     end
