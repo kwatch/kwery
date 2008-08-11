@@ -22,7 +22,7 @@ module Kwery
     end
 
     def quote_keyword(word)
-      raise NotImlementedError.new("#{self.class.name}#quote_keyword(): not implemented yet.")
+      raise NotImplementedError.new("#{self.class.name}#quote_keyword(): not implemented yet.")
     end
 
     def quote_value(val)
