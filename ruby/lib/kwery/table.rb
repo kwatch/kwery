@@ -78,9 +78,9 @@ module Kwery
       s << " unique" if @_unique
       s << " default null" if @_default.equal?(Column::NULL)
       s << " default #{query.quote_value(@_default)}" if !@_default.nil?
-      s << " on update #{auery.quote_value(@_on_update)}" if !@_on_update.nil?
+      s << " on update #{query.quote_value(@_on_update)}" if !@_on_update.nil?
       r = @_references
-      s << " references(#{query.quote_keyword(query.to_table_name(r[0]))}, #{r[1]})" if r
+      s << " references #{query.quote_keyword(query.to_table_name(r[0]))}(#{r[1]})" if r
       return s
     end
 
@@ -123,8 +123,8 @@ module Kwery
     end
 
     def to_sql
-      s =  "create table #{@query.quote_keyword(@query.to_table_name(@table_name))} (\n  "
       q = @query
+      s =  "create table #{q.quote_keyword(q.to_table_name(@table_name))} (\n  "
       s << @columns.collect {|column| column.to_sql(q) }.join(",\n  ") << "\n)"
       return s
     end
