@@ -7,68 +7,187 @@
 
 module Kwery
 
-  module ColumnBuilder
 
-    def integer(name, max=nil)
-      @_max = max
-      yield(self) if block_given?
-      @_columns << build_integer_column(name, max)
+  class Column
+
+    class NULL; end
+
+    class <<self
+      alias __new__ new
     end
 
-    def build_integer_column(name, nax)
+#    def new(*args)
+#      return self.__new__(*args)
+#    end
 
+    def initialize(name, type, width, width2)
+      @_name = name
+      @_type = type
+      @_width = width
+      @_width2 = width2
+    end
+
+    attr_reader :_name, :_type, :_width, :_width2
+    attr_reader :_not_null, :_primary_key, :_serial, :_unique, :_default, :_references, :_on_update
+
+    def not_null
+      @_not_null = true
+      return self
+    end
+
+    def primary_key
+      @_primary_key = true
+      return self
+    end
+
+    def auto_increment
+      @_serial = true
+      return self
+    end
+
+    def serial
+      @_serial = true
+      return self
+    end
+
+    def unique
+      @_unique = true
+      return self
+    end
+
+    def default(val)
+      @_default = val.nil? ? Column::NULL : val
+      return self
+    end
+
+    def references(table, column=:id)
+      @_references = [table, column]
+      return self
+    end
+
+    def on_update(arg)
+      @_on_update = arg
+      return self
+    end
+
+    def to_sql(query)
+      s = _build_column_decl(query)
+      s << " primary key" if @_primary_key
+      s << " not null" if @_not_null
+      s << _build_serial_constraint(query) if @_serial
+      s << " unique" if @_unique
+      s << " default null" if @_default.equal?(Column::NULL)
+      s << " default #{query.quote_value(@_default)}" if !@_default.nil?
+      s << " on update #{auery.quote_value(@_on_update)}" if !@_on_update.nil?
+      r = @_references
+      s << " references(#{query.quote_keyword(query.to_table_name(r[0]))}, #{r[1]})" if r
+      return s
+    end
+
+    def _build_column_decl(query)
+      s = @_width2 ? "(#{@_width}, #{@_width2})" : @_width ? "(#{@_width})" : ""
+      return "%-18s %-15s" % [query.quote_keyword(@_name), "#{@_type}#{s}"]
+    end
+
+    def _build_serial_constraint(query)
+      return @_serial ? " auto_increment" : nil
     end
 
   end
 
 
-  module TableBuilder
+  class TableBuilder
 
-    def initialize(conn=nil)
-      @conn = conn
-    end
-    attr_accessor :conn, :prefix
-
-    def create_table(table_name, opts={})
-      @before_block.call(self) if @before_block
-      yield(self)
-      @after_block.call(self)  if @after_block
-      #
-      sql = build_create_table_sql()
-      if (@conn)
-
-      end
-      @_columns
+    class <<self
+      alias __new__ new
     end
 
-    def before(&block)
-      @before_block = block
+    def initialize(query=nil)
+      @query = query || Query.new(nil)
+    end
+    attr_accessor :query, :table_name, :options, :columns
+
+    def create_table(table_name, options={}, &block)
+      @table_name = table_name
+      @options = options
+      define_columns(&block) if block
+      return to_sql()
     end
 
-    def after(&block)
-      @after_block = block
+    def define_columns(&block)
+      @columns = []
+      before()
+      block.call(self)
+      after()
+      return @columns
+    end
+
+    def to_sql
+      s =  "create table #{@query.quote_keyword(@query.to_table_name(@table_name))} (\n  "
+      q = @query
+      s << @columns.collect {|column| column.to_sql(q) }.join(",\n  ") << "\n)"
+      return s
+    end
+
+    def before
+      #self.integer(:id) {|c| c.primary_key.serial }
+    end
+
+    def after
+      #self.timestamp(:created_at) {|c| c.not_null }
+      #self.timestamp(:updated_at) {|c| c.not_null }
+    end
+
+    ###
+
+    def integer(name, width=nil, &block)
+      _build_column(name, :integer, width, nil, &block)
+    end
+
+    def string(name, width=nil, &block)
+      _build_column(name, :varchar, width || 255, nil, &block)
+    end
+
+    def text(name, &block)
+      _build_column(name, :text, nil, nil, &block)
+    end
+
+    def float(name, width=nil, width2=nil, &block)
+      _build_column(name, :float, width, width2, &block)
+    end
+
+    def decimal(name, width=nil, width2=nil, &block)
+      _build_column(name, :decimal, width, width2, &block)
+    end
+
+    def boolean(name, &block)
+      _build_column(name, :boolean, nil, nil, &block)
+    end
+
+    def timestamp(name, &block)
+      _build_column(name, :timestamp, nil, nil, &block)
+    end
+
+    def date(name, &block)
+      _build_column(name, :date, nil, nil, &block)
+    end
+
+    def time(name, &block)
+      _build_column(name, :time, nil, nil, &block)
+    end
+
+    def datetime(name, &block)
+      _build_column(name, :datetime, nil, nil, &block)
+    end
+
+    def _build_column(name, type, width, width2, &block)  # :nodoc:
+      column = Column.new(name, type, width, width2)
+      block.call(column) if block
+      @columns << column
+      return column
     end
 
   end
 
-
-  class Table
-
-    def create
-    end
-  end
-
-
-  q.create_table('teams') do |t|
-    #t.add(:id)
-    t.integer(:id) {|f| f.primary_key.auto_increment }
-    t.string(:name, 255) {|f| f.not_null.unique }
-    t.text(:desc)
-    #t.add(:created_at)
-    #t.add(:updated_at)
-    t.timestamp(:created_at) {|f| f.not_null }
-    t.timestamp(:updated_at) {|f| f.not_null.on_update(:current_timestamp) }
-    t.boolean(:delete) {|f| f.default(false) }
-  end
 
 end

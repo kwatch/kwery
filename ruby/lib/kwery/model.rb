@@ -26,9 +26,11 @@ module Kwery
         klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[^A-Z]+)/) {|s| arr << s.downcase }
         @__table__ = arr.join('_')
         @__column_names__ = []
+        @__columns__ = []
         class <<self
           attr_accessor :__table__
           attr_reader :__column_names__
+          attr_reader :__columns__, :create_table_sql
         end
         def self.set_table_name(table_name)
           @__table__ = table_name
@@ -71,6 +73,20 @@ module Kwery
               end
           END
           self.class_eval(defs.join)
+        end
+        def self.create_table(table_name, options={}, &block)
+          self.set_table_name(table_name)
+          @__options__ = options
+          builder = TableBuilder.new(Query.new(nil))
+          @__columns__ = builder.define_columns(&block)
+        end
+        def self.to_sql(query=nil)
+          query ||= Query.new(nil)
+          builder = TableBuilder.new(nil)
+          builder.table_name = @__table__
+          builder.columns = @__columns__
+          #return builder.create_table(@__table__, @__options__)
+          return builder.to_sql()
         end
       end
       return self
