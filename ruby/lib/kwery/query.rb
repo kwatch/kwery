@@ -356,8 +356,9 @@ module Kwery
       return list
     end
 
-    def insert(table, values)
+    def insert(table, values=nil)
       return table.__insert__(self) if table.is_a?(Model)
+      raise ArgumentError.new("values to insert are required.") if values.nil?
       set_table(table)
       sql = @builder.build_insert_sql(values)
       @builder.clear()
@@ -370,7 +371,7 @@ module Kwery
 
     def update(table, values=nil, id=nil)
       return table.__update__(self) if table.is_a?(Model)
-      raise ArgumentError.new("update values are required.") if values.nil?
+      raise ArgumentError.new("values to update are required.") if values.nil?
       set_table(table)
       yield(@builder) if block_given?
       unless id || @_where
