@@ -166,6 +166,7 @@ module Kwery
     end
 
     def __delete__(query)
+      raise "Not inserted object." if @__old__.nil?
       query.delete(self.class.__table__, self.id)
       __deleted__(query)
     end
