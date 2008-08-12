@@ -296,6 +296,12 @@ module Kwery
       return ret
     end
 
+    ## (experimental)
+    def get!(table, key, val=UNDEFINED)
+      @builder.where(key, val)
+      return get(table)
+    end
+
     def _collect_models(result, model_class, list=[])  # :nodoc:
       result.each_hash do |hash|
         if hash
@@ -322,6 +328,12 @@ module Kwery
       end
       result.free() if @auto_free
       return list
+    end
+
+    ## (experimental)
+    def get_all!(table, key, val=UNDEFINED)
+      @builder.where(key, val)
+      return get_all(table)
     end
 
     def select(table, columns=nil, klass=nil)
@@ -391,6 +403,12 @@ module Kwery
       return execute(sql)
     end
 
+    ## (experimental)
+    def update!(table, values, key, val=UNDEFINED)
+      @builder.where(key, val)
+      return update(table, values)
+    end
+
     def update_all(table, values)
       set_table(table)
       sql = @builder.build_update_sql(values, nil)
@@ -408,6 +426,12 @@ module Kwery
       sql = @builder.build_delete_sql(id)
       @builder.clear()
       return execute(sql)
+    end
+
+    ## (experimental)
+    def delete!(table, key, val=UNDEFINED)
+      @builder.where(key, val)
+      return delete(table)
     end
 
     def delete_all(table)
