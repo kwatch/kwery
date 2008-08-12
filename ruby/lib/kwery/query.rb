@@ -256,7 +256,7 @@ module Kwery
 
   module QueryExecutor
 
-    attr_accessor :conn, :builder, :stderr, :table_prefix
+    attr_accessor :conn, :builder, :output, :table_prefix
 
     def set_table(table)
       @builder._table = to_table_name(table)
@@ -416,7 +416,7 @@ module Kwery
     end
 
     def execute(sql)
-      #@stderr << sql << "\n" if @stderr
+      #@output << sql << "\n" if @output
       #return @conn.query(sql)
       raise NotImplementedError.new("#{self.class.name}#execute(): not implemented yet.")
     end

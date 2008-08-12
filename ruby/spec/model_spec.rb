@@ -20,7 +20,7 @@ require 'database_config'
 
 conn = Kwery.connect(HOST, USER, PASS, DBNAME)
 q = Kwery::Query.new(conn)
-#q.stderr = $stderr
+#q.output = $output
 now = :current_timestamp
 
 
@@ -173,10 +173,10 @@ describe "Kwery::Model#__update__" do
     ryouou.desc.should == nil
     desc = 'Ryouou Hight School'
     ryouou.desc = desc
-    q.stderr = ''
+    q.output = ''
     q.update(ryouou)
-    q.stderr.should == "update teams set updated_at=current_timestamp, `desc`='Ryouou Hight School' where id = 2\n"
-    q.stderr = nil
+    q.output.should == "update teams set updated_at=current_timestamp, `desc`='Ryouou Hight School' where id = 2\n"
+    q.output = nil
     q.get(Team, ryouou.id).desc.should == desc
   end
 

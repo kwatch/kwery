@@ -20,7 +20,7 @@ require 'database_config'
 
 conn = Kwery.connect(HOST, USER, PASS, DBNAME)
 q = Kwery::Query.new(conn)
-#q.stderr = $stderr
+#q.output = $output
 now = :current_timestamp
 
 
