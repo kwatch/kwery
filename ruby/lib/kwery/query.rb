@@ -98,6 +98,8 @@ module Kwery
       return self
     end
 
+    alias w where
+
     def and_where(key, val=UNDEFINED)
       @_where << ' and ' << _factor(key, val)
       return self
