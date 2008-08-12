@@ -180,6 +180,11 @@ describe 'Kwery::QueryExecutor#get' do
     hash.should == nil
     hash = q.get('members') {|c| c.where(:name, 'Minoru') }
     hash.should == nil
+    #
+    obj = q.get(Member, 999)
+    obj.should == nil
+    obj = q.get(Member) {|c| c.where(:name, 'Minoru') }
+    obj.should == nil
   end
 
   it "can take Model class" do
@@ -210,6 +215,7 @@ describe 'Kwery::QueryExecutor#get_all' do
     list.first.should be_a_kind_of(Hash)
     list.length.should == 3
     list.each {|hash| hash['team_id'].to_i.should == 1 }
+    #list.should be_all{|hash| hash['team_id'].to_i == 1 }
   end
 
   it "can take where-clause" do
