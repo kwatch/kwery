@@ -1,0 +1,543 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html">
+  <title>Kwery User's Guide</title>
+  <meta name="generator" content="kwaser">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <link rel="stylesheet" href="docstyle.css" type="text/css">
+ </head>
+ <body>
+
+  <blockquote>
+   <div class="mainbody">
+
+    <div align="left"><h1>Kwery User's Guide</h1></div>
+    <div align="left">
+      last update: $Date: $<br>
+    </div>
+
+<a name="Preface"></a>
+<h2 class="section1">Preface</h2>
+<p>Kwery is a pretty database library.
+You can use Kwery as database library (like DBI), or as O/R Mapper.
+</p>
+<ul type="disc">
+<li>Kwery is very small and lightweight.
+   It is suitable especially for CGI script.
+</li>
+<li>It is not necessary to define model class.
+   If you don't define model class, you can use Hash object instead of model object.
+</li>
+<li>You can define model class to map tables (optional).
+</li>
+<li>It is very easy to use Kwery if you already know SQL.
+</li>
+<li>Currently Kwery supports only MySQL, but it will be easy to support other RDBMS.
+</li>
+<li>Kwery doesn't have validation functionality currently.
+</li>
+</ul>
+<a name="Table of contents"></a>
+<h3 class="section2">Table of contents</h3>
+<ul>
+  <li><a href="#Preface">Preface</a>
+  <ul>
+    <li><a href="#Table of contents">Table of contents</a>
+    </li>
+  </ul>
+  </li>
+  <li><a href="#Examples (without model class)">Examples (without model class)</a>
+  <ul>
+    <li><a href="#create table">create table</a>
+    </li>
+    <li><a href="#insert into">insert into</a>
+    </li>
+    <li><a href="#select from">select from</a>
+    <ul>
+      <li><a href="#get()">get()</a>
+      </li>
+      <li><a href="#get_all()">get_all()</a>
+      </li>
+      <li><a href="#select()">select()</a>
+      </li>
+    </ul>
+    </li>
+    <li><a href="#update">update</a>
+    </li>
+    <li><a href="#delete from">delete from</a>
+    </li>
+  </ul>
+  </li>
+  <li><a href="#Examples (with model class)">Examples (with model class)</a>
+  <ul>
+    <li><a href="#create table">create table</a>
+    </li>
+    <li><a href="#insert into">insert into</a>
+    </li>
+    <li><a href="#select from">select from</a>
+    </li>
+    <li><a href="#update">update</a>
+    </li>
+    <li><a href="#delete">delete</a>
+    </li>
+  </ul>
+  </li>
+</ul>
+<br>
+
+
+<br>
+
+
+<a name="Examples (without model class)"></a>
+<h2 class="section1">Examples (without model class)</h2>
+<a name="create table"></a>
+<h3 class="section2">create table</h3>
+<a name="011_create_tables1.rb"></a>
+<div class="program_caption">
+create_tables1.rb</div>
+<pre class="program"><strong>require 'kwery'</strong>
+<strong>require 'kwery/adapters/mysql'</strong>
+
+sql1 = &lt;&lt;END
+create table teams (
+  id          integer       primary key auto_increment,
+  name        varchar(255)  not null unique,
+  `desc`      text,
+  leader_id   integer       references members(id),
+  created_at  timestamp,
+  updated_at  timestamp
+) engine=InnoDB
+END
+
+sql2 = &lt;&lt;END
+create table members (
+  id          integer       primary key auto_increment,
+  name        varchar(255)  not null,
+  `desc`      text,
+  team_id     integer       not null,
+  created_at  timestamp,
+  updated_at  timestamp
+) engine=InnoDB
+END
+
+## create Query object
+<strong>conn = Kwery.connect('localhost', 'username', 'password', 'dbname')</strong>
+<strong>q = Kwery::Query.new(conn)</strong>
+
+## Query#execute() executes any kind of SQL
+<strong>q.execute(sql1)</strong>
+<strong>q.execute(sql2)</strong>
+</pre>
+<br>
+
+
+<a name="insert into"></a>
+<h3 class="section2">insert into</h3>
+<a name="021_insert_into1.rb"></a>
+<div class="program_caption">
+insert_into1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## insert Array
+<strong>q.insert('teams', [nil, 'sos', 'SOS Brigate', nil, :current_timestamp, :current_timestamp])</strong>
+<strong>id = q.last_insert_id</strong>  # get sos's id
+<strong>q.insert('members', [nil, 'Haruhi', nil, id, :current_timestamp, :current_timestamp])</strong>
+<strong>q.insert('members', [nil, 'Mikuru', nil, id, :current_timestamp, :current_timestamp])</strong>
+<strong>q.insert('members', [nil, 'Yuki', nil, id, :current_timestamp, :current_timestamp])</strong>
+
+## insert Hash
+<strong>q.insert('teams', {:name=&gt;'ryouou', :desc=&gt;'Ryouou Hight-School',</strong>
+                    <strong>:created_at=&gt;:current_timestamp, :updated_at=&gt;:current_timestamp})</strong>
+<strong>id = q.last_insert_id</strong>  # get ryouou's id
+<strong>now = :current_timestamp</strong>
+<strong>q.insert('members', {:name=&gt;'Konata', :team_id=&gt;id, :created_at=&gt;now, :updated_at=&gt;now})</strong>
+<strong>q.insert('members', {:name=&gt;'Kagami', :team_id=&gt;id, :created_at=&gt;now, :updated_at=&gt;now})</strong>
+<strong>q.insert('members', {:name=&gt;'Tsukasa', :team_id=&gt;id, :created_at=&gt;now, :updated_at=&gt;now})</strong>
+<strong>q.insert('members', {:name=&gt;'Miyuki', :team_id=&gt;id, :created_at=&gt;now, :updated_at=&gt;now})</strong>
+</pre>
+<br>
+
+
+<a name="select from"></a>
+<h3 class="section2">select from</h3>
+<p>There are several methods for 'select from'.
+</p>
+<a name="get()"></a>
+<h4 class="section3">get()</h4>
+<p>Kwery::Query#get() returns only a record.
+</p>
+<a name="031_get1.rb"></a>
+<div class="program_caption">
+get1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## get by id
+<strong>sos = q.get('teams', 1)</strong>
+p sos     #=&gt; {"id"=&gt;1, "name"=&gt;"sos", "desc"=&gt;"SOS Brigate", "leader_id"=&gt;nil, ... }
+<strong>haruhi = q.get('members', 1)</strong>
+p haruhi  #=&gt; {"id"=&gt;1, "name="Haruhi", "desc"=&gt;nil, "team_id"=&gt;1, ... }
+
+## get by condition
+<strong>ryouou = q.get('teams') {|c| c.where(:name, 'ryouou') }</strong>
+p ryouou  #=&gt; {"id"=&gt;2, "name"=&gt;"ryouou", "desc"=&gt;"Ryouou Hight-School", ... }
+<strong>konata = q.get('members') {|c| c.where('name =', 'konata') }</strong>
+p konata  #=&gt; {"id"=&gt;4, "name"=&gt;"Konata", "desc"=&gt;nil, "team_id"=&gt;2, ... }
+</pre>
+<p>The followings are equivarent each other.
+</p>
+<p>* q.get('members') {|c| c.where(:name, 'Haruhi') }
+* q.get('members') {|c| c.where('name', 'Haruhi') }
+* q.get('members') {|c| c.where('name = ', 'Haruhi') }
+* q.get('members') {|c| c.where('name = %s', ['Haruhi']) }
+* q.get('members') {|c| c.where("name = 'Haruhi'") }
+</p>
+<p>(experimental)
+Kwery provides a convenient method 'q.get!()'.
+</p>
+<a name="032_get_all2.rb"></a>
+<pre class="program"><strong>konata = q.get!('members', :name, 'Konata')</strong>
+## this is equivarent to the following
+#konata = q.get('members') {|c| c.where(:name, 'Konata') }
+</pre>
+<br>
+
+<a name="get_all()"></a>
+<h4 class="section3">get_all()</h4>
+<p>Kwery::Query#get() returns all records matched to condition.
+</p>
+<a name="041_get_all1.rb"></a>
+<div class="program_caption">
+get_all1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## SOS Brigate
+sos = q.get('teams') {|c| c.where(:name, 'sos') }
+
+## get all members of SOS Brigate
+<strong>members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }</strong>
+for member in members
+  p member  #=&gt; {"id"=&gt;1, "name"=&gt;"Haruhi", "team_id"=&gt;1, ...}
+            #=&gt; {"id"=&gt;2, "name"=&gt;"Mikuru", "team_id"=&gt;1, ... }
+	    #=&gt; {"id"=&gt;3, "name"=&gt;"Yuki", "team_id"=&gt;1, ... }
+end
+p sos
+</pre>
+<p>You can specify several 'where' clauses.
+</p>
+<a name="042_get_all2.rb"></a>
+<pre class="program">t = Time.mktime(1990, 7, 7)
+members = q.get('members') {|c|
+  <strong>c.where(:team_id, sos['id']).where('created_at &gt;', t).where_is_not_null(:desc)</strong>
+}
+</pre>
+<p>'order_by', 'group_by', 'having', 'limit' are also available.
+</p>
+<a name="043_get_all3.rb"></a>
+<pre class="program">t = Time.mktime(1990, 7, 7)
+members = q.get('members') {|c|
+  c.where(:team_id, ryouou['id'])<strong>.order_by(:id).limit(0, 2)</strong>
+}
+</pre>
+<p>(experimental)
+Kwery provides a convenient method 'q.get_all!()'.
+</p>
+<a name="044_get_all4.rb"></a>
+<pre class="program"><strong>members = q.get_all!('members', :team_id, sos['id'])</strong>
+## this is equivarent to the following
+#members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }
+</pre>
+<br>
+
+<a name="select()"></a>
+<h4 class="section3">select()</h4>
+<p>Kwery::Query#select() returns all of records matched to conditions.
+It is able to specify select colums by Query#select().
+</p>
+<a name="051_select_from1.rb"></a>
+<div class="program_caption">
+select_from1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get('teams') {|c| c.where(:name, 'sos') }
+
+### select only id and name columns
+<strong>members = q.select('members', 'id, name') {|c| c.where(:team_id, sos['id']) }</strong>
+p members    #=&gt; [{"name"=&gt;"Haruhi", "id"=&gt;1},
+             #    {"name"=&gt;"Mikuru", "id"=&gt;2},
+             #    {"name"=&gt;"Yuki", "id"=&gt;3}]
+</pre>
+<a name="051_select_from1.result"></a>
+<div class="terminal_caption">
+result</div>
+<pre class="terminal">$ ruby select_from1.rb
+</pre>
+<p>It is able to specify class object as which records are get.
+</p>
+<a name="052_select_form2.rb"></a>
+<pre class="program">### specify to get as Array instead of Hash
+members = q.select('members', 'id, name', <strong>Array</strong>) {|c| c.where(:team_id, sos['id']) }
+p members   #=&gt; [[1, 'Haruhi'], [2, 'Mikuru'], [3, 'Yuki']]
+</pre>
+<p>If you want to join tables, specify table names in select().
+</p>
+<a name="053_select_from3.rb"></a>
+<pre class="program">records = q.select(<strong>'members, teams'</strong>, '*', Array) {|c|
+  <strong>c.where('members.team_id = teams.id')</strong>
+}
+require 'pp'
+pp records  #=&gt; [[1, "Haruhi", nil, 1, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     1, "sos", "SOS Brigae", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [2, "Mikuru", nil, 1, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     1, "sos", "SOS Brigate", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [3, "Yuki", nil, 1, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     1, "sos", "SOS Brigate", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [4, "Konata", nil, 2, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [5, "Kagami", nil, 2, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [6, "Tsukasa", nil, 2, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+            #    [7, "Miyuki", nil, 2, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;]]
+</pre>
+<p>You can select only a certain table's record when joining.
+</p>
+<a name="054_select_from4.rb"></a>
+<pre class="program">records = q.select('members, teams', <strong>'members.*'</strong>) {|c|
+  <strong>c.where('members.team_id = teams.id').where('teams.name =', 'sos')</strong>
+}
+p records  #=&gt; [{"id"=&gt;1, "name"=&gt;"Haruhi", "team_id"=&gt;1, ... },
+           #    {"id"=&gt;2, "name"=&gt;"Mikuru", "team_id"=&gt;1, ... },
+           #    {"id"=&gt;3, "name"=&gt;"Yuki", "team_id"=&gt;1, ... }]
+</pre>
+<p>Also left outer join is available.
+</p>
+<a name="055_select_from5.rb"></a>
+<pre class="program">records = q.select(<strong>'teams'</strong>, '*', Array) {|c|
+  <strong>c.left_outer_join('members', 'leader_id')</strong>
+}
+p records  #=&gt; [[1, "sos", "SOS Brigate", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+           #    1, "Haruhi", nil, 1, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;],
+           #    [2, "ryouou", "Ryouou Hight-School", nil, #&lt;Mysql::Time&gt;, #&lt;Mysql::Time&gt;,
+           #    nil, nil, nil, nil, nil, nil]]
+</pre>
+<p>Query#select!() is not provided.
+</p>
+<br>
+
+<br>
+
+
+<a name="update"></a>
+<h3 class="section2">update</h3>
+<p>Query#update() updates data matched to conditions.
+</p>
+<a name="061_update1.rb"></a>
+<div class="program_caption">
+update1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get!('teams', :name, 'sos')
+haruhi = q.get!('members', :name, 'Haruhi')
+
+### update column
+<strong>values = {:leader_id=&gt;haruhi['id'], :updated_at=&gt;:current_timestamp}</strong>
+<strong>q.update('teams', values) {|c| c.where(:id, sos['id']) }</strong>
+p q.select('teams', 'id, name, leader_id')
+    #=&gt; [{"name"=&gt;"sos", "id"=&gt;1, "leader_id"=&gt;1},
+    #    {"name"=&gt;"ryouou", "id"=&gt;2, "leader_id"=&gt;nil}]
+</pre>
+<p>You can specify 'id' to update.
+</p>
+<a name="062__update2.rb"></a>
+<pre class="program">### specify 'id' as condition
+<strong>q.update('teams', values, sos['id'])</strong>
+### this is equivarent to the following
+#q.update('teams', values) {|c| c.where(:id, sos['id']) }
+</pre>
+<p>(experimental)
+Kwery provides Kwery::Query#update!() for convenience.
+</p>
+<a name="063_update2.rb"></a>
+<pre class="program">q.update('members', values, :name, 'Haruhi')
+### this is equivarent to the following
+#q.update('members', values) {|c| c.where(:name, 'Haruhi') }
+</pre>
+<p>You must specify conditions or 'id' value for update(), or you'll get an error.
+This is intended to avoid "accidential all update".
+</p>
+<a name="064_update4_error.rb"></a>
+<pre class="program">### this will cause an error, because condition nor id is specified.
+q.update('teams', values)
+</pre>
+<p>If you want to update all records, you must use update_all() instead of update().
+</p>
+<a name="065_update5.rb"></a>
+<pre class="program">### update all records in teams table
+<strong>q.update_all('teams', values)</strong>
+</pre>
+<br>
+
+
+<a name="delete from"></a>
+<h3 class="section2">delete from</h3>
+<a name="071_delete_from1.rb"></a>
+<div class="program_caption">
+delete_from1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+require 'pp'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+### delete members of Ryouou
+ryouou = q.get!('teams', :name, 'ryouou')
+<strong>q.delete('members') {|c| c.where(:team_id, ryouou['id']) }</strong>
+</pre>
+<p>It is able to specify 'id' value as condition.
+</p>
+<a name="072_delete_from2.rb"></a>
+<pre class="program">### delete Ryouou
+ryouou = q.get!('teams', :name, 'ryouou')
+<strong>q.delete('teams', ryouou['id'])</strong>
+### this is equivarent to the following
+# q.delete('teams') {|c| c.where(:id, ryouou['id']) }
+</pre>
+<p>You need to specify conditions or 'id' value, or you'll get an error.
+This is intended to avoid "accidencall all deletion".
+</p>
+<a name="073_delete_from3_error.rb"></a>
+<pre class="program">### this will raise error because no conditons nor no id is specified.
+q.delete('members')
+</pre>
+<p>If you want to delete all records, you must use delete_all() instead of delete().
+</p>
+<a name="074_delete_from4.rb"></a>
+<pre class="program">### delete all records in members table
+<strong>q.delete_all('members')</strong>
+</pre>
+<br>
+
+
+<br>
+
+
+<a name="Examples (with model class)"></a>
+<h2 class="section1">Examples (with model class)</h2>
+<a name="create table"></a>
+<h3 class="section2">create table</h3>
+<a name="111_create_table1.rb"></a>
+<div class="program_caption">
+create_table1.rb</div>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+
+class Team
+  <strong>include Kwery::Model</strong>
+
+  <strong>create_table('teams') do |t|</strong>
+    <strong>t.integer(:id) {|c| c.primary_key.auto_increment }</strong>  # or serial
+    <strong>t.string(:name, 255) {|c| c.not_null.unique }</strong>
+    <strong>t.text(:desc)</strong>
+    <strong>t.integer(:leader_id) {|c| c.references('members') }</strong>
+    <strong>t.timestamp(:created_at)</strong>
+    <strong>t.timestamp(:updated_at)</strong>
+  end
+
+  attr_accessor :leader
+
+end
+
+class Member
+  <strong>include Kwery::Model</strong>
+
+  <strong>create_table('members') do |t|</strong>
+    <strong>t.integer(:id) {|c| c.primary_key.auto_increment }</strong>  # or serial
+    <strong>t.string(:name, 255) {|c| c.not_null }</strong>
+    <strong>t.text(:desc)</strong>
+    <strong>t.integer(:team_id) {|c| c.references('teams') }</strong>
+    <strong>t.timestamp(:created_at)</strong>
+    <strong>t.timestamp(:updated_at)</strong>
+  <strong>end</strong>
+
+  attr_accessor :team
+
+end
+
+if __FILE__ == $0
+  conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+  q = Kwery::Query.new(conn)
+  sql = <strong>Team.to_sql</strong>
+  puts sql   #=&gt;
+             # create table teams (
+             #   id                 integer         primary key auto_increment,
+             #   name               varchar(255)    not null unique,
+             #   `desc`             text           ,
+             #   leader_id          integer         references members(id),
+             #   created_at         timestamp      ,
+             #   updated_at         timestamp      
+             # )
+  q.execute(sql)
+  sql = <strong>Member.to_sql</strong>
+  puts sql   #=&gt;
+             # create table members (
+             #   id                 integer         primary key auto_increment,
+             #   name               varchar(255)    not null,
+             #   `desc`             text           ,
+             #   team_id            integer         references teams(id),
+             #   created_at         timestamp      ,
+             #   updated_at         timestamp      
+             # )
+  q.execute(sql)
+end
+</pre>
+<br>
+
+
+<a name="insert into"></a>
+<h3 class="section2">insert into</h3>
+<br>
+
+
+<a name="select from"></a>
+<h3 class="section2">select from</h3>
+<br>
+
+
+<a name="update"></a>
+<h3 class="section2">update</h3>
+<br>
+
+
+<a name="delete"></a>
+<h3 class="section2">delete</h3>
+<br>
+
+
+<br>
+
+
+
+   </div>
+  </blockquote>
+
+ </body>
+</html>

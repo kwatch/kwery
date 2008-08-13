@@ -1,0 +1,38 @@
+properties:
+
+  - dir:             d/users_guide
+
+parameters:
+
+  - rook_product:    :all
+
+recipes:
+
+  - product:	:all
+    ingreds:	[ :clear, :retrieve, :exec ]
+
+  - product:	:clear
+    method*: |
+	require 'kwery'
+	require 'kwery/adapters/mysql'
+	conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+	q = Kwery::Query.new(conn)
+	q.execute('drop table if exists teams')
+	q.execute('drop table if exists members')
+	#
+	rm_rf "#{@dir}/*"
+
+  - product:	:retrieve
+    ingreds:	[ users_guide.txt ]
+    method*: |
+	mkdir_p @dir unless test(?d, @dir)
+	sys "retrieve -d #{@dir} #{@ingred}"
+
+  - product:	:exec
+    method*: |
+	#
+	sys "ruby #{Dir.glob(@dir+'/011*')[-1]}"
+	sys "ruby #{Dir.glob(@dir+'/021*')[-1]}"
+
+    
+
