@@ -188,18 +188,18 @@ p sos     #=&gt; {"id"=&gt;1, "name"=&gt;"sos", "desc"=&gt;"SOS Brigate", "leade
 p haruhi  #=&gt; {"id"=&gt;1, "name="Haruhi", "desc"=&gt;nil, "team_id"=&gt;1, ... }
 
 ## get by condition
-<strong>ryouou = q.get('teams') {|c| c.where(:name, 'ryouou') }</strong>
+<strong>ryouou = q.get('teams') { q.where(:name, 'ryouou') }</strong>
 p ryouou  #=&gt; {"id"=&gt;2, "name"=&gt;"ryouou", "desc"=&gt;"Ryouou Hight-School", ... }
-<strong>konata = q.get('members') {|c| c.where('name =', 'konata') }</strong>
+<strong>konata = q.get('members') { q.where('name =', 'konata') }</strong>
 p konata  #=&gt; {"id"=&gt;4, "name"=&gt;"Konata", "desc"=&gt;nil, "team_id"=&gt;2, ... }
 </pre>
 <p>The followings are equivarent each other.
 </p>
-<p>* q.get('members') {|c| c.where(:name, 'Haruhi') }
-* q.get('members') {|c| c.where('name', 'Haruhi') }
-* q.get('members') {|c| c.where('name = ', 'Haruhi') }
-* q.get('members') {|c| c.where('name = %s', ['Haruhi']) }
-* q.get('members') {|c| c.where("name = 'Haruhi'") }
+<p>* q.get('members') { q.where(:name, 'Haruhi') }
+* q.get('members') { q.where('name', 'Haruhi') }
+* q.get('members') { q.where('name = ', 'Haruhi') }
+* q.get('members') { q.where('name = %s', ['Haruhi']) }
+* q.get('members') { q.where("name = 'Haruhi'") }
 </p>
 <p>(experimental)
 Kwery provides a convenient method 'q.get!()'.
@@ -207,7 +207,7 @@ Kwery provides a convenient method 'q.get!()'.
 <a name="032_get_all2.rb"></a>
 <pre class="program"><strong>konata = q.get!('members', :name, 'Konata')</strong>
 ## this is equivarent to the following
-#konata = q.get('members') {|c| c.where(:name, 'Konata') }
+#konata = q.get('members') { q.where(:name, 'Konata') }
 </pre>
 <br>
 
@@ -225,10 +225,10 @@ conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
 
 ## SOS Brigate
-sos = q.get('teams') {|c| c.where(:name, 'sos') }
+sos = q.get('teams') { q.where(:name, 'sos') }
 
 ## get all members of SOS Brigate
-<strong>members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }</strong>
+<strong>members = q.get_all('members') { q.where(:team_id, sos['id']) }</strong>
 for member in members
   p member  #=&gt; {"id"=&gt;1, "name"=&gt;"Haruhi", "team_id"=&gt;1, ...}
             #=&gt; {"id"=&gt;2, "name"=&gt;"Mikuru", "team_id"=&gt;1, ... }
@@ -258,7 +258,7 @@ Kwery provides a convenient method 'q.get_all!()'.
 <a name="044_get_all4.rb"></a>
 <pre class="program"><strong>members = q.get_all!('members', :team_id, sos['id'])</strong>
 ## this is equivarent to the following
-#members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }
+#members = q.get_all('members') { q.where(:team_id, sos['id']) }
 </pre>
 <br>
 
@@ -274,10 +274,10 @@ select_from1.rb</div>
 require 'kwery/adapters/mysql'
 conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
-sos = q.get('teams') {|c| c.where(:name, 'sos') }
+sos = q.get('teams') { q.where(:name, 'sos') }
 
 ### select only id and name columns
-<strong>members = q.select('members', 'id, name') {|c| c.where(:team_id, sos['id']) }</strong>
+<strong>members = q.select('members', 'id, name') { q.where(:team_id, sos['id']) }</strong>
 p members    #=&gt; [{"name"=&gt;"Haruhi", "id"=&gt;1},
              #    {"name"=&gt;"Mikuru", "id"=&gt;2},
              #    {"name"=&gt;"Yuki", "id"=&gt;3}]
@@ -291,7 +291,7 @@ result</div>
 </p>
 <a name="052_select_form2.rb"></a>
 <pre class="program">### specify to get as Array instead of Hash
-members = q.select('members', 'id, name', <strong>Array</strong>) {|c| c.where(:team_id, sos['id']) }
+members = q.select('members', 'id, name', <strong>Array</strong>) { q.where(:team_id, sos['id']) }
 p members   #=&gt; [[1, 'Haruhi'], [2, 'Mikuru'], [3, 'Yuki']]
 </pre>
 <p>If you want to join tables, specify table names in select().
@@ -360,7 +360,7 @@ haruhi = q.get!('members', :name, 'Haruhi')
 
 ### update column
 <strong>values = {:leader_id=&gt;haruhi['id'], :updated_at=&gt;:current_timestamp}</strong>
-<strong>q.update('teams', values) {|c| c.where(:id, sos['id']) }</strong>
+<strong>q.update('teams', values) { q.where(:id, sos['id']) }</strong>
 p q.select('teams', 'id, name, leader_id')
     #=&gt; [{"name"=&gt;"sos", "id"=&gt;1, "leader_id"=&gt;1},
     #    {"name"=&gt;"ryouou", "id"=&gt;2, "leader_id"=&gt;nil}]
@@ -371,7 +371,7 @@ p q.select('teams', 'id, name, leader_id')
 <pre class="program">### specify 'id' as condition
 <strong>q.update('teams', values, sos['id'])</strong>
 ### this is equivarent to the following
-#q.update('teams', values) {|c| c.where(:id, sos['id']) }
+#q.update('teams', values) { q.where(:id, sos['id']) }
 </pre>
 <p>(experimental)
 Kwery provides Kwery::Query#update!() for convenience.
@@ -379,7 +379,7 @@ Kwery provides Kwery::Query#update!() for convenience.
 <a name="063_update2.rb"></a>
 <pre class="program">q.update('members', values, :name, 'Haruhi')
 ### this is equivarent to the following
-#q.update('members', values) {|c| c.where(:name, 'Haruhi') }
+#q.update('members', values) { q.where(:name, 'Haruhi') }
 </pre>
 <p>You must specify conditions or 'id' value for update(), or you'll get an error.
 This is intended to avoid "accidential all update".
@@ -410,7 +410,7 @@ q = Kwery::Query.new(conn)
 
 ### delete members of Ryouou
 ryouou = q.get!('teams', :name, 'ryouou')
-<strong>q.delete('members') {|c| c.where(:team_id, ryouou['id']) }</strong>
+<strong>q.delete('members') { q.where(:team_id, ryouou['id']) }</strong>
 </pre>
 <p>It is able to specify 'id' value as condition.
 </p>
@@ -419,7 +419,7 @@ ryouou = q.get!('teams', :name, 'ryouou')
 ryouou = q.get!('teams', :name, 'ryouou')
 <strong>q.delete('teams', ryouou['id'])</strong>
 ### this is equivarent to the following
-# q.delete('teams') {|c| c.where(:id, ryouou['id']) }
+# q.delete('teams') { q.where(:id, ryouou['id']) }
 </pre>
 <p>You need to specify conditions or 'id' value, or you'll get an error.
 This is intended to avoid "accidencall all deletion".
@@ -454,10 +454,10 @@ class Team
   <strong>include Kwery::Model</strong>
 
   <strong>create_table('teams') do |t|</strong>
-    <strong>t.integer(:id) {|c| c.primary_key.auto_increment }</strong>  # or serial
-    <strong>t.string(:name, 255) {|c| c.not_null.unique }</strong>
+    <strong>t.integer(:id) { q.primary_key.auto_increment }</strong>  # or serial
+    <strong>t.string(:name, 255) { q.not_null.unique }</strong>
     <strong>t.text(:desc)</strong>
-    <strong>t.integer(:leader_id) {|c| c.references('members') }</strong>
+    <strong>t.integer(:leader_id) { q.references('members') }</strong>
     <strong>t.timestamp(:created_at)</strong>
     <strong>t.timestamp(:updated_at)</strong>
   end
@@ -470,10 +470,10 @@ class Member
   <strong>include Kwery::Model</strong>
 
   <strong>create_table('members') do |t|</strong>
-    <strong>t.integer(:id) {|c| c.primary_key.auto_increment }</strong>  # or serial
-    <strong>t.string(:name, 255) {|c| c.not_null }</strong>
+    <strong>t.integer(:id) { q.primary_key.auto_increment }</strong>  # or serial
+    <strong>t.string(:name, 255) { q.not_null }</strong>
     <strong>t.text(:desc)</strong>
-    <strong>t.integer(:team_id) {|c| c.references('teams') }</strong>
+    <strong>t.integer(:team_id) { q.references('teams') }</strong>
     <strong>t.timestamp(:created_at)</strong>
     <strong>t.timestamp(:updated_at)</strong>
   <strong>end</strong>

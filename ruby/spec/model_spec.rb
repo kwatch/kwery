@@ -27,13 +27,13 @@ now = :current_timestamp
 class Team
   include Kwery::Model
   create_table('teams') do |t|
-    t.integer(:id)  {|c| c.primary_key.serial }
-    t.string(:name) {|c| c.not_null.unique }
+    t.integer(:id)  { q.primary_key.serial }
+    t.string(:name) { q.not_null.unique }
     t.text(:desc)
-    t.integer(:owner_id) {|c| c.references('members') }
-    t.timestamp(:created_at) {|c| c.not_null.default(:current_timestamp) }
-    t.timestamp(:updated_at) {|c| c.not_null }
-    t.boolean(:deleted) {|c| c.not_null.default(false) }
+    t.integer(:owner_id) { q.references('members') }
+    t.timestamp(:created_at) { q.not_null.default(:current_timestamp) }
+    t.timestamp(:updated_at) { q.not_null }
+    t.boolean(:deleted) { q.not_null.default(false) }
   end
   attr_accessor :owner
 end
@@ -41,14 +41,14 @@ end
 class Member
   include Kwery::Model
   create_table('members') do |t|
-    t.integer(:id) {|c| c.primary_key.serial }
-    t.string(:name, 64) {|c| c.not_null }
+    t.integer(:id) { q.primary_key.serial }
+    t.string(:name, 64) { q.not_null }
     t.text(:desc)
-    t.integer(:team_id) {|c| c.not_null.references('teams') }
+    t.integer(:team_id) { q.not_null.references('teams') }
     t.date(:birth)
-    t.timestamp(:updated_at) {|c| c.not_null.on_update(:current_timestamp) }
+    t.timestamp(:updated_at) { q.not_null.on_update(:current_timestamp) }
     t.timestamp(:created_at) {|c| }
-    t.boolean(:deleted) {|c| c.not_null.default(false) }
+    t.boolean(:deleted) { q.not_null.default(false) }
   end
   attr_accessor :team
 end
@@ -65,11 +65,11 @@ describe 'Kwery::Model.create_table' do
   it "sets @__columns___ to list of Columns." do
     Team.__columns__.should be_a_kind_of(Array)
     Team.__columns__.length.should == 7
-    Team.__columns__.each {|c| c.should be_a_kind_of(Kwery::Column) }
+    Team.__columns__.each { q.should be_a_kind_of(Kwery::Column) }
     Team.__columns__.collect {|x| x._name }.should == col_names1
     Member.__columns__.should be_a_kind_of(Array)
     Member.__columns__.length.should == 8
-    Member.__columns__.each {|c| c.should be_a_kind_of(Kwery::Column) }
+    Member.__columns__.each { q.should be_a_kind_of(Kwery::Column) }
     Member.__columns__.collect {|x| x._name }.should == col_names2
   end
 
@@ -186,7 +186,7 @@ describe "Kwery::Model#__update__" do
   end
 
   it "sets updated_at column automatically" do
-    haruhi = q.get(Member) {|c| c.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
     haruhi.should_not == nil
     created_at = haruhi.created_at
     updated_at = haruhi.updated_at
@@ -207,10 +207,10 @@ end
 describe "Kwery::Model.__delete__" do
 
   it "deletes model object" do
-    haruhi = q.get(Member) {|c| c.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
     haruhi.should_not == nil
     q.delete(haruhi)
-    haruhi = q.get(Member) {|c| c.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
     haruhi.should == nil
   end
 

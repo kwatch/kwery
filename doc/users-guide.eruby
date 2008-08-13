@@ -2,6 +2,7 @@
 .?release:	$Release$
 .?copyright:	$Copyright$
 .?lastupdate:	$Date: $
+.?stylesheet:	docstyle.css
 
 
 .$ Preface
@@ -9,24 +10,19 @@
 Kwery is a pretty database library.
 You can use Kwery as database library (like DBI), or as O/R Mapper.
 
-* Kwery is very small and lightweight.
-  It is suitable especially for CGI script.
-
-* It is not necessary to define model class.
-  If you don't define model class, you can use Hash object instead of model object.
-
-* You can define model class to map tables (optional).
-
-* It is very easy to use Kwery if you already know SQL.
-
-* Currently Kwery supports only MySQL, but it will be easy to support other RDBMS.
-
-* Kwery doesn't have validation functionality currently.
+.* Kwery is very small and lightweight.
+   It is suitable especially for CGI script.
+.* It is not necessary to define model class.
+   If you don't define model class, you can use Hash object instead of model object.
+.* You can define model class to map tables (optional).
+.* It is very easy to use Kwery if you already know SQL.
+.* Currently Kwery supports only MySQL, but it will be easy to support other RDBMS.
+.* Kwery doesn't have validation functionality currently.
 
 
 .$$ Table of contents
 
-.<<<: users_guide.toc
+.<<< users-guide.toc
 
 
 .$ Examples (without model class)
@@ -133,19 +129,19 @@ p sos     #=> {"id"=>1, "name"=>"sos", "desc"=>"SOS Brigate", "leader_id"=>nil, 
 p haruhi  #=> {"id"=>1, "name="Haruhi", "desc"=>nil, "team_id"=>1, ... }
 
 ## get by condition
-{{*ryouou = q.get('teams') {|c| c.where(:name, 'ryouou') }*}}
+{{*ryouou = q.get('teams') { q.where(:name, 'ryouou') }*}}
 p ryouou  #=> {"id"=>2, "name"=>"ryouou", "desc"=>"Ryouou Hight-School", ... }
-{{*konata = q.get('members') {|c| c.where('name =', 'konata') }*}}
+{{*konata = q.get('members') { q.where('name =', 'konata') }*}}
 p konata  #=> {"id"=>4, "name"=>"Konata", "desc"=>nil, "team_id"=>2, ... }
 .--------------------
 
 The followings are equivarent each other.
 
-* q.get('members') {|c| c.where(:name, 'Haruhi') }
-* q.get('members') {|c| c.where('name', 'Haruhi') }
-* q.get('members') {|c| c.where('name = ', 'Haruhi') }
-* q.get('members') {|c| c.where('name = %s', ['Haruhi']) }
-* q.get('members') {|c| c.where("name = 'Haruhi'") }
+* q.get('members') { q.where(:name, 'Haruhi') }
+* q.get('members') { q.where('name', 'Haruhi') }
+* q.get('members') { q.where('name = ', 'Haruhi') }
+* q.get('members') { q.where('name = %s', ['Haruhi']) }
+* q.get('members') { q.where("name = 'Haruhi'") }
 
 (experimental)
 Kwery provides a convenient method 'q.get!()'.
@@ -153,7 +149,7 @@ Kwery provides a convenient method 'q.get!()'.
 .-------------------- 032_get_all2.rb
 {{*konata = q.get!('members', :name, 'Konata')*}}
 ## this is equivarent to the following
-#konata = q.get('members') {|c| c.where(:name, 'Konata') }
+#konata = q.get('members') { q.where(:name, 'Konata') }
 .--------------------
 
 
@@ -170,10 +166,10 @@ conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
 
 ## SOS Brigate
-sos = q.get('teams') {|c| c.where(:name, 'sos') }
+sos = q.get('teams') { q.where(:name, 'sos') }
 
 ## get all members of SOS Brigate
-{{*members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }*}}
+{{*members = q.get_all('members') { q.where(:team_id, sos['id']) }*}}
 for member in members
   p member  #=> {"id"=>1, "name"=>"Haruhi", "team_id"=>1, ...}
             #=> {"id"=>2, "name"=>"Mikuru", "team_id"=>1, ... }
@@ -196,7 +192,7 @@ members = q.get('members') {|c|
 .-------------------- 043_get_all3.rb
 t = Time.mktime(1990, 7, 7)
 members = q.get('members') {|c|
-  {{*c.where(:team_id, ryouou['id']).order_by(:id).limit(0, 2)*}}
+  c.where(:team_id, ryouou['id']){{*.order_by(:id).limit(0, 2)*}}
 }
 .--------------------
 
@@ -206,7 +202,7 @@ Kwery provides a convenient method 'q.get_all!()'.
 .-------------------- 044_get_all4.rb
 {{*members = q.get_all!('members', :team_id, sos['id'])*}}
 ## this is equivarent to the following
-#members = q.get_all('members') {|c| c.where(:team_id, sos['id']) }
+#members = q.get_all('members') { q.where(:team_id, sos['id']) }
 .--------------------
 
 
@@ -221,10 +217,10 @@ require 'kwery'
 require 'kwery/adapters/mysql'
 conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
-sos = q.get('teams') {|c| c.where(:name, 'sos') }
+sos = q.get('teams') { q.where(:name, 'sos') }
 
 ### select only id and name columns
-{{*members = q.select('members', 'id, name') {|c| c.where(:team_id, sos['id']) }*}}
+{{*members = q.select('members', 'id, name') { q.where(:team_id, sos['id']) }*}}
 p members    #=> [{"name"=>"Haruhi", "id"=>1},
              #    {"name"=>"Mikuru", "id"=>2},
              #    {"name"=>"Yuki", "id"=>3}]
@@ -239,7 +235,7 @@ It is able to specify class object as which records are get.
 
 .-------------------- 052_select_form2.rb
 ### specify to get as Array instead of Hash
-members = q.select('members', 'id, name', {{*Array*}}) {|c| c.where(:team_id, sos['id']) }
+members = q.select('members', 'id, name', {{*Array*}}) { q.where(:team_id, sos['id']) }
 p members   #=> [[1, 'Haruhi'], [2, 'Mikuru'], [3, 'Yuki']]
 .--------------------
 
@@ -252,18 +248,18 @@ records = q.select({{*'members, teams'*}}, '*', Array) {|c|
 require 'pp'
 pp records  #=> [[1, "Haruhi", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
             #     1, "sos", "SOS Brigae", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [2, "Mikuru", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
-            #    1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [3, "Yuki", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
-            #    1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [4, "Konata", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
-            #    2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [5, "Kagami", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
-            #    2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [6, "Tsukasa", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
-            #    2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
-            #   [7, "Miyuki", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
-            #    2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>]]
+            #    [2, "Mikuru", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
+            #     1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
+            #    [3, "Yuki", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
+            #     1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
+            #    [4, "Konata", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+            #    [5, "Kagami", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+            #    [6, "Tsukasa", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+            #    [7, "Miyuki", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>]]
 .--------------------
 
 You can select only a certain table's record when joining.
@@ -308,7 +304,7 @@ haruhi = q.get!('members', :name, 'Haruhi')
 
 ### update column
 {{*values = {:leader_id=>haruhi['id'], :updated_at=>:current_timestamp}*}}
-{{*q.update('teams', values) {|c| c.where(:id, sos['id']) }*}}
+{{*q.update('teams', values) { q.where(:id, sos['id']) }*}}
 p q.select('teams', 'id, name, leader_id')
     #=> [{"name"=>"sos", "id"=>1, "leader_id"=>1},
     #    {"name"=>"ryouou", "id"=>2, "leader_id"=>nil}]
@@ -320,7 +316,7 @@ You can specify 'id' to update.
 ### specify 'id' as condition
 {{*q.update('teams', values, sos['id'])*}}
 ### this is equivarent to the following
-#q.update('teams', values) {|c| c.where(:id, sos['id']) }
+#q.update('teams', values) { q.where(:id, sos['id']) }
 .--------------------
 
 (experimental)
@@ -329,7 +325,7 @@ Kwery provides Kwery::Query#update!() for convenience.
 .-------------------- 063_update2.rb
 q.update('members', values, :name, 'Haruhi')
 ### this is equivarent to the following
-#q.update('members', values) {|c| c.where(:name, 'Haruhi') }
+#q.update('members', values) { q.where(:name, 'Haruhi') }
 .--------------------
 
 You must specify conditions or 'id' value for update(), or you'll get an error.
@@ -361,7 +357,7 @@ q = Kwery::Query.new(conn)
 
 ### delete members of Ryouou
 ryouou = q.get!('teams', :name, 'ryouou')
-{{*q.delete('members') {|c| c.where(:team_id, ryouou['id']) }*}}
+{{*q.delete('members') { q.where(:team_id, ryouou['id']) }*}}
 .--------------------
 
 It is able to specify 'id' value as condition.
@@ -371,7 +367,7 @@ It is able to specify 'id' value as condition.
 ryouou = q.get!('teams', :name, 'ryouou')
 {{*q.delete('teams', ryouou['id'])*}}
 ### this is equivarent to the following
-# q.delete('teams') {|c| c.where(:id, ryouou['id']) }
+# q.delete('teams') { q.where(:id, ryouou['id']) }
 .--------------------
 
 You need to specify conditions or 'id' value, or you'll get an error.
@@ -404,10 +400,10 @@ class Team
   {{*include Kwery::Model*}}
 
   {{*create_table('teams') do |t|*}}
-    {{*t.integer(:id) {|c| c.primary_key.auto_increment }*}}  # or serial
-    {{*t.string(:name, 255) {|c| c.not_null.unique }*}}
+    {{*t.integer(:id) { q.primary_key.auto_increment }*}}  # or serial
+    {{*t.string(:name, 255) { q.not_null.unique }*}}
     {{*t.text(:desc)*}}
-    {{*t.integer(:leader_id) {|c| c.references('members') }*}}
+    {{*t.integer(:leader_id) { q.references('members') }*}}
     {{*t.timestamp(:created_at)*}}
     {{*t.timestamp(:updated_at)*}}
   end
@@ -420,10 +416,10 @@ class Member
   {{*include Kwery::Model*}}
 
   {{*create_table('members') do |t|*}}
-    {{*t.integer(:id) {|c| c.primary_key.auto_increment }*}}  # or serial
-    {{*t.string(:name, 255) {|c| c.not_null }*}}
+    {{*t.integer(:id) { q.primary_key.auto_increment }*}}  # or serial
+    {{*t.string(:name, 255) { q.not_null }*}}
     {{*t.text(:desc)*}}
-    {{*t.integer(:team_id) {|c| c.references('teams') }*}}
+    {{*t.integer(:team_id) { q.references('teams') }*}}
     {{*t.timestamp(:created_at)*}}
     {{*t.timestamp(:updated_at)*}}
   {{*end*}}

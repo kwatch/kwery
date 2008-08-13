@@ -1,14 +1,32 @@
 properties:
 
-  - dir:             d/users_guide
+  - U:		users-guide
+  - dir:	d/$(U)
 
 parameters:
 
-  - rook_product:    :all
+  - rook_product:    $(U).html
+  #- rook_product:    :try
 
 recipes:
 
   - product:	:all
+    ingreds:	[ :html ]
+
+  - product:	:html
+    ingreds:	[ $(U).html ]
+
+  - product:	$(U).html
+    ingreds:	[ $(U).txt ]
+    byprods:	[ $(U).toc.html ]
+    method*: |
+	sys "kwaser -t html-css -T #{@ingred} > #{@byprod}"
+	sys "kwaser -t html-css    #{@ingred} > #{@product}"
+	edit @product do |content|
+	  content
+	end
+
+  - product:	:try
     ingreds:	[ :clear, :retrieve, :exec ]
 
   - product:	:clear
@@ -22,8 +40,13 @@ recipes:
 	#
 	rm_rf "#{@dir}/*"
 
+  - product:	$(U).txt
+    ingreds:	[ ../../doc/$(U).eruby ]
+    method*: |
+	sys "erubis -p '\\[% %\\]' -E PercentLine #{@ingred} > #{@product}"
+
   - product:	:retrieve
-    ingreds:	[ users_guide.txt ]
+    ingreds:	[ $(U).txt ]
     method*: |
 	mkdir_p @dir unless test(?d, @dir)
 	sys "retrieve -d #{@dir} #{@ingred}"
