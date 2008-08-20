@@ -28,7 +28,7 @@ module Kwery
     end
 
     attr_reader :_name, :_type, :_width, :_width2
-    attr_reader :_not_null, :_primary_key, :_serial, :_unique, :_default, :_references, :_on_update
+    attr_reader :_not_null, :_primary_key, :_serial, :_unique, :_default, :_references #, :_on_update
 
     def not_null
       @_not_null = true
@@ -62,10 +62,12 @@ module Kwery
       return self
     end
 
-    def on_update(arg)
-      @_on_update = arg
-      return self
-    end
+    #--
+    #def on_update(arg)
+    #  @_on_update = arg
+    #  return self
+    #end
+    #++
 
     def to_sql(query)
       s = _build_column_decl(query)
@@ -75,7 +77,7 @@ module Kwery
       s << " unique" if @_unique
       s << " default null" if @_default.equal?(Column::NULL)
       s << " default #{query.quote_value(@_default)}" if !@_default.nil?
-      s << " on update #{query.quote_value(@_on_update)}" if !@_on_update.nil?
+      #s << " on update #{query.quote_value(@_on_update)}" if !@_on_update.nil?
       r = @_references
       s << " references #{query.quote_keyword(query.to_table_name(r[0]))}(#{r[1]})" if r
       return s
