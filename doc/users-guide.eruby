@@ -112,7 +112,7 @@ There are several methods for 'select from'.
 
 .$$$ get()
 
-Kwery::Query#get() returns only a record.
+Kwery::Query#get() returns a record.
 
 .? get1.rb
 .-------------------- 031_get1.rb
@@ -151,6 +151,8 @@ Kwery provides a convenient method 'q.get!()'.
 ## this is equivarent to the following
 #konata = q.get('members') { q.where(:name, 'Konata') }
 .--------------------
+
+This is an experimental method, so it may be changed or removed in the future version.
 
 
 .$$$ get_all()
@@ -204,6 +206,8 @@ Kwery provides a convenient method 'q.get_all!()'.
 ## this is equivarent to the following
 #members = q.get_all('members') { q.where(:team_id, sos['id']) }
 .--------------------
+
+This is an experimental method, so it may be changed or removed in the future version.
 
 
 .$$$ select()
@@ -299,8 +303,8 @@ require 'kwery'
 require 'kwery/adapters/mysql'
 conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
-sos = q.get!('teams', :name, 'sos')
-haruhi = q.get!('members', :name, 'Haruhi')
+sos = q.get('teams') { q.where(:name, 'sos') }
+haruhi = q.get('members') { q.where(:name, 'Haruhi') }
 
 ### update column
 {{*values = {:leader_id=>haruhi['id'], :updated_at=>:current_timestamp}*}}
@@ -321,9 +325,10 @@ You can specify 'id' to update.
 
 (experimental)
 Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
 
 .-------------------- 063_update2.rb
-q.update('members', values, :name, 'Haruhi')
+q.update!('members', values, :name, 'Haruhi')
 ### this is equivarent to the following
 #q.update('members', values) { q.where(:name, 'Haruhi') }
 .--------------------
@@ -356,7 +361,7 @@ conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
 
 ### delete members of Ryouou
-ryouou = q.get!('teams', :name, 'ryouou')
+ryouou = q.get('teams') { q.where(:name, 'ryouou') }
 {{*q.delete('members') { q.where(:team_id, ryouou['id']) }*}}
 .--------------------
 
@@ -364,10 +369,21 @@ It is able to specify 'id' value as condition.
 
 .-------------------- 072_delete_from2.rb
 ### delete Ryouou
-ryouou = q.get!('teams', :name, 'ryouou')
+ryouou = q.get('teams') { q.where(:name, 'ryouou') }
 {{*q.delete('teams', ryouou['id'])*}}
 ### this is equivarent to the following
 # q.delete('teams') { q.where(:id, ryouou['id']) }
+.--------------------
+
+(experimental)
+'delete!()' is provided for convenient.
+This is an experimental method, so it may be changed or removed in the future version.
+
+.--------------------
+ryouou = q.get('teams') { q.where(:name, 'ryouout') }
+q.delete!('teams', :name, 'ryouou')
+### this is equivarent to the following
+# q.delete('teams') { q.where(:name, 'ryouou') }
 .--------------------
 
 You need to specify conditions or 'id' value, or you'll get an error.
@@ -391,8 +407,8 @@ If you want to delete all records, you must use delete_all() instead of delete()
 
 .$$ create table
 
-.? create_table1.rb
-.--------------------  111_create_table1.rb
+.? models.rb
+.-------------------- models.rb
 require 'kwery'
 require 'kwery/adapters/mysql'
 
@@ -400,10 +416,10 @@ class Team
   {{*include Kwery::Model*}}
 
   {{*create_table('teams') do |t|*}}
-    {{*t.integer(:id) { q.primary_key.auto_increment }*}}  # or serial
-    {{*t.string(:name, 255) { q.not_null.unique }*}}
+    {{*t.integer(:id) {|c| c.primary_key.auto_increment }*}}  # or serial
+    {{*t.string(:name, 255) {|c| c.not_null.unique }*}}
     {{*t.text(:desc)*}}
-    {{*t.integer(:leader_id) { q.references('members') }*}}
+    {{*t.integer(:leader_id) {|c| c.references('members') }*}}
     {{*t.timestamp(:created_at)*}}
     {{*t.timestamp(:updated_at)*}}
   end
@@ -416,10 +432,10 @@ class Member
   {{*include Kwery::Model*}}
 
   {{*create_table('members') do |t|*}}
-    {{*t.integer(:id) { q.primary_key.auto_increment }*}}  # or serial
-    {{*t.string(:name, 255) { q.not_null }*}}
+    {{*t.integer(:id) {|c| c.primary_key.auto_increment }*}}  # or serial
+    {{*t.string(:name, 255) {|c| c.not_null }*}}
     {{*t.text(:desc)*}}
-    {{*t.integer(:team_id) { q.references('teams') }*}}
+    {{*t.integer(:team_id) {|c| c.references('teams') }*}}
     {{*t.timestamp(:created_at)*}}
     {{*t.timestamp(:updated_at)*}}
   {{*end*}}
@@ -459,16 +475,443 @@ end
 
 .$$ insert into
 
+
+.? insert_into2.rb
+.-------------------- 121_insert_into2.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+{{*reqire 'models'*}}
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## insert Model
+{{*sos = Team.new(nil, 'sos', 'SOS Brigate', nil)*}}
+{{*sos.created_at = team.updated_at = :current_timestamp*}}
+{{*q.insert(team)*}}
+{{*p sos.id*}}   # id is set automatically
+{{*q.insert(Member.new(nil, 'Haruhi', nil, sos.id, :current_timestamp, :current_timestamp))*}}
+{{*q.insert(Member.new(nil, 'Mikuru', nil, sos.id, :current_timestamp, :current_timestamp))*}}
+{{*q.insert(Member.new(nil, 'Yuki',   nil, sos.id, :current_timestamp, :current_timestamp))*}}
+
+## insert Hash
+{{*ryouou = Team.new(:name=>'ryouou', :desc=>'Ryouou Hight-School',*}}
+                    {{*:created_at=>:current_timestamp, :updated_at=>:current_timestamp})*}}
+{{*p ryouou.id*}}  # id is set automatially
+{{*now = :current_timestamp*}}
+{{*q.insert(Member.new(:name=>'Konata', :team_id=>id, :created_at=>now, :updated_at=>now))*}}
+{{*q.insert(Member.new(:name=>'Kagami', :team_id=>id, :created_at=>now, :updated_at=>now)))*}}
+{{*q.insert(Member.new(:name=>'Tsukasa', :team_id=>id, :created_at=>now, :updated_at=>now))*}}
+{{*q.insert(Member.new(:name=>'Miyuki', :team_id=>id, :created_at=>now, :updated_at=>now))*}}
+.--------------------
+
+
 .$$ select from
+
+There are several methods for 'select from'.
+
+
+.$$$ get()
+
+Kwery::Query#get() returns a record.
+
+.? get1.rb
+.-------------------- 131_get1.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+{{*require 'models'*}}
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## get by id
+{{*sos = q.get(Team, 1)*}}
+p sos     #=> #<Team @id=1, @name=>"sos", @desc="SOS Brigate", @leader_id=>nil, ... >
+{{*haruhi = q.get(Member, 1)*}}
+p haruhi  #=> #<Team @id=1, @name="Haruhi", @desc=nil, @team_id=1, ... >
+
+## get by condition
+{{*ryouou = q.get(Team) { q.where(:name, 'ryouou') }*}}
+p ryouou  #=> #<Team @id=2, @name="ryouou", @desc="Ryouou Hight-School", ... >
+{{*konata = q.get(Member) { q.where('name =', 'konata') }*}}
+p konata  #=> #<Team @id=4, @name="Konata", @desc=nil, @team_id=2, ... >
+.--------------------
+
+The followings are equivarent each other.
+
+.* q.get(Member) { q.where(:name, 'Haruhi') }
+.* q.get(Member) { q.where('name', 'Haruhi') }
+.* q.get(Member) { q.where('name = ', 'Haruhi') }
+.* q.get(Member) { q.where('name = %s', ['Haruhi']) }
+.* q.get(Member) { q.where("name = 'Haruhi'") }
+
+(experimental)
+Kwery provides a convenient method 'q.get!()'.
+
+.-------------------- 132_get_all2.rb
+{{*konata = q.get!(Member, :name, 'Konata')*}}
+## this is equivarent to the following
+#konata = q.get(Member) { q.where(:name, 'Konata') }
+.--------------------
+
+This is an experimental method, so it may be changed or removed in the future version.
+
+
+.$$$ get_all()
+
+Kwery::Query#get() returns all records matched to condition.
+
+.? get_all1.rb
+.-------------------- 141_get_all1.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+{{*require 'models'*}}
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+## SOS Brigate
+sos = q.get(Team) { q.where(:name, 'sos') }
+
+## get all members of SOS Brigate
+{{*members = q.get_all(Member) { q.where(:team_id, sos['id']) }*}}
+for member in members
+  p member  #=> #<Member @id=1, @name="Haruhi", @team_id=1, ... >
+            #=> #<Member @id=2, @name="Mikuru", @team_id=1, ... >
+	    #=> #<Member @id=3, @name="Yuki", @team_id=1, ... >
+end
+p sos
+.--------------------
+
+You can specify several 'where' clauses.
+
+.-------------------- 142_get_all2.rb
+t = Time.mktime(1990, 7, 7)
+members = q.get(Member) {|c|
+  {{*c.where(:team_id, sos['id']).where('created_at >', t).where_is_not_null(:desc)*}}
+}
+.--------------------
+
+'order_by', 'group_by', 'having', 'limit' are also available.
+
+.-------------------- 143_get_all3.rb
+t = Time.mktime(1990, 7, 7)
+members = q.get(Member) {|c|
+  c.where(:team_id, ryouou['id']){{*.order_by(:id).limit(0, 2)*}}
+}
+.--------------------
+
+(experimental)
+Kwery provides a convenient method 'q.get_all!()'.
+
+.-------------------- 144_get_all4.rb
+{{*members = q.get_all!(Member, :team_id, sos['id'])*}}
+## this is equivarent to the following
+#members = q.get_all(Member) { q.where(:team_id, sos['id']) }
+.--------------------
+
+This is an experimental method, so it may be changed or removed in the future version.
+
+
+.$$$ select()
+
+Kwery::Query#select() returns all of records matched to conditions.
+It is able to specify select colums by Query#select().
+
+.? select_from1.rb
+.-------------------- 151_select_from1.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+{{*require 'models'*}}
+
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+
+### select only id and name columns
+{{*members = q.select(Member, 'id, name') { q.where(:team_id, sos.id) }*}}
+p members    #=> [#<Member @name="Haruhi", @id=1>,
+             #    #<Member @name="Mikuru", @id=2>,
+             #    #<Member @name="Yuki", @id=3>]
+.--------------------
+
+.? result
+.==================== 051_select_from1.result
+$ ruby select_from1.rb
+.====================
+
+It is able to specify class object as which records are get.
+
+.-------------------- 152_select_form2.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+.#---
+### specify to get as Array instead of Hash
+members = q.select(Member, 'id, name', {{*Array*}}) { q.where(:team_id, sos.id) }
+p members   #=> [[1, 'Haruhi'], [2, 'Mikuru'], [3, 'Yuki']]
+.--------------------
+
+.#If you want to join tables, specify table names in select().
+It is not supported to specify several model classes in select().
+
+.-------------------- 153_select_from3.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+.#---
+## this is not supported
+records = q.select({{*[Member, Team]*}}, '*', Array) {
+  {{*q.where('members.team_id = teams.id')*}}
+}
+.#require 'pp'
+.#pp records  #=> [[1, "Haruhi", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     1, "sos", "SOS Brigae", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [2, "Mikuru", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [3, "Yuki", nil, 1, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [4, "Konata", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [5, "Kagami", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [6, "Tsukasa", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>],
+.#            #    [7, "Miyuki", nil, 2, #<Mysql::Time>, #<Mysql::Time>,
+.#            #     2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>]]
+.--------------------
+
+.#You can select only a certain table's record when joining.
+.#
+.#.-------------------- 154_select_from4.rb
+.#records = q.select([Member, Team], {{*'members.*'*}}) {
+.#  {{*q.where('members.team_id = teams.id').where('teams.name =', 'sos')*}}
+.#}
+.#p records  #=> [{"id"=>1, "name"=>"Haruhi", "team_id"=>1, ... },
+.#           #    {"id"=>2, "name"=>"Mikuru", "team_id"=>1, ... },
+.#           #    {"id"=>3, "name"=>"Yuki", "team_id"=>1, ... }]
+.#.--------------------
+
+.#Also left outer join is available.
+left outer join is available.
+
+.-------------------- 155_select_from5.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+.#---
+records = q.select({{*Team*}}, '*', Array) {
+  {{*q.left_outer_join(Member, 'leader_id')*}}
+}
+p records  #=> [[1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>,
+           #    1, "Haruhi", nil, 1, #<Mysql::Time>, #<Mysql::Time>],
+           #    [2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>,
+           #    nil, nil, nil, nil, nil, nil]]
+.--------------------
+
+Query#select!() is not provided.
+
+
 
 .$$ update
 
-.$$ delete
+Query#update() updates data matched to conditions.
+
+.? update1.rb
+.-------------------- 161_update1.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+
+### update column
+{{*values = {:leader_id=>haruhi.id, :updated_at=>:current_timestamp}*}}
+{{*q.update(Team, values) { q.where(:id, sos.id) }*}}
+p q.select(Team, 'id, name, leader_id')
+    #=> [#<Team @id=1, @name="sos", @leader_id=1>,
+    #    #<Team @id=2, @name="ryouou", @leader_id=nil>]
+.--------------------
+
+You can specify 'id' to update.
+
+.-------------------- 162_update2.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+values = {:leader_id=>haruhi.id, :updated_at=>:current_timestamp}
+.#---
+### specify 'id' as condition
+{{*q.update(Team, values, sos.id)*}}
+### this is equivarent to the following
+#q.update(Team, values) { q.where(:id, sos.id) }
+.#+++
+require 'pp'
+pp q.select(Team, 'id, name, leader_id')
+.#---
+.--------------------
+
+(experimental)
+Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
+
+.-------------------- 163_update2.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+values = {:leader_id=>haruhi.id, :updated_at=>:current_timestamp}
+.#---
+q.update!(Member, values, :name, 'Haruhi')
+### this is equivarent to the following
+#q.update(Member, values) { q.where(:name, 'Haruhi') }
+.#+++
+require 'pp'
+pp q.select(Team, 'id, name, leader_id')
+.#---
+.--------------------
+
+You must specify conditions or 'id' value for update(), or you'll get an error.
+This is intended to avoid "accidential all update".
+
+.-------------------- 164_update4_error.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+sos = q.get(Team) { q.where(:name, 'sos') }
+haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+values = {:leader_id=>haruhi.id, :updated_at=>:current_timestamp}
+begin
+.#---
+### this will cause an error, because condition nor id is specified.
+q.update(Team, values)
+.#+++
+  puts "*** NG: Exception expected but not raised."
+rescue => ex
+  require 'pp'
+  pp ex
+  puts "*** OK: Exception expected and raised correctly."
+end
+.#---
+.--------------------
+
+If you want to update all records, you must use update_all() instead of update().
+
+.-------------------- 165_update5.rb
+### update all records in teams table
+{{*q.update_all(Team, values)*}}
+.--------------------
+
+
+
+.$$ delete from
+
+.? delete_from1.rb
+.-------------------- 171_delete_from1.rb
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+
+### delete members of Ryouou
+ryouou = q.get(Team) { q.where(:name, 'ryouou') }
+{{*q.delete(Member) { q.where(:team_id, ryouou.id) }*}}
+p q.select(Member)   #=> [#<Member @name="Haruhi", @team_id=1, ...>,
+                     #    #<Member @name="Mikuru", @team_id=1, ...>,
+                     #    #<Member @name="Yuki", @team_id=1, ...>]
+.--------------------
+
+It is able to specify 'id' value as condition.
+
+.-------------------- 172_delete_from2.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+.#---
+### delete Ryouou
+ryouou = q.get(Team) { q.where(:name, 'ryouou') }
+{{*q.delete(Team, ryouou.id)*}}
+### this is equivarent to the following
+# q.delete(Team) { q.where(:id, ryouou.id) }
+.#+++
+p q.select(Team)
+.#---
+.--------------------
+
+(experimental)
+'delete!()' is provided for convenient.
+This is an experimental method, so it may be changed or removed in the future version.
+
+.--------------------
+ryouou = q.get(Team) { q.where(:name, 'ryouou') }
+q.delete!(Team, :name, 'ryouou')
+### this is equivarent to the following
+# q.delete(Team) { q.where(:name, 'ryouou') }
+.--------------------
+
+You need to specify conditions or 'id' value, or you'll get an error.
+This is intended to avoid "accidencall all deletion".
+
+.-------------------- 173_delete_from3_error.rb
+.#+++
+require 'kwery'
+require 'kwery/adapters/mysql'
+require 'models'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Query.new(conn)
+begin
+.#---
+### this will raise error because no conditons nor no id is specified.
+q.delete(Member)
+.#+++
+  puts "*** NG: exception expected but not raised."
+rescue => ex
+  p ex
+  puts "*** OK: exception expected and raised."
+end
+.#---
+.--------------------
+
+If you want to delete all records, you must use delete_all() instead of delete().
+
+.-------------------- 174_delete_from4.rb
+### delete all records in members table
+{{*q.delete_all(Member)*}}
+.--------------------
 
 
 % RUBY = true
 % if RUBY
-
 
 % else raise "error"
 % end
