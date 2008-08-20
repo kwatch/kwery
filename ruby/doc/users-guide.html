@@ -203,12 +203,18 @@ p konata  #=&gt; {"id"=&gt;4, "name"=&gt;"Konata", "desc"=&gt;nil, "team_id"=&gt
 </pre>
 <p>The followings are equivarent each other.
 </p>
-<p>* q.get('members') { q.where(:name, 'Haruhi') }
-* q.get('members') { q.where('name', 'Haruhi') }
-* q.get('members') { q.where('name = ', 'Haruhi') }
-* q.get('members') { q.where('name = %s', ['Haruhi']) }
-* q.get('members') { q.where("name = 'Haruhi'") }
-</p>
+<ul type="disc">
+<li>q.get('members') { q.where(:name, 'Haruhi') }
+</li>
+<li>q.get('members') { q.where('name', 'Haruhi') }
+</li>
+<li>q.get('members') { q.where('name = ', 'Haruhi') }
+</li>
+<li>q.get('members') { q.where('name = %s', ['Haruhi']) }
+</li>
+<li>q.get('members') { q.where("name = 'Haruhi'") }
+</li>
+</ul>
 <p>(experimental)
 Kwery provides a convenient method 'q.get!()'.
 </p>
@@ -387,6 +393,7 @@ p q.select('teams', 'id, name, leader_id')
 </pre>
 <p>(experimental)
 Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
 </p>
 <a name="063_update2.rb"></a>
 <pre class="program">q.update!('members', values, :name, 'Haruhi')
@@ -769,6 +776,7 @@ p q.select(Team, 'id, name, leader_id')
 </pre>
 <p>(experimental)
 Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
 </p>
 <a name="163_update2.rb"></a>
 <pre class="program">q.update!(Member, values, :name, 'Haruhi')

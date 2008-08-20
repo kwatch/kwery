@@ -7,6 +7,7 @@
 
 
 require 'kwery/query'
+require 'kwery/table'
 require 'mysql'
 
 
@@ -177,6 +178,28 @@ module Kwery
   SQL_ERROR_CLASS = ::Mysql::Error
   TIMESTAMP_CLASS = ::Mysql::Time
   DATE_CLASS = ::Mysql::Time
+
+
+  class MySQLColumn < Column
+
+    def to_sql(query)
+      sql = super(query)
+      if @_type == :timestamp && @_default.nil?
+        sql << (@_not_null ? ' default 0' : ' null default null')
+      end
+      return sql
+    end
+
+  end
+
+
+  class Column
+
+    def self.new(*args)
+      return MySQLColumn.__new__(*args)  # Column.new returns MySQLColumn object
+    end
+
+  end
 
 
 end

@@ -85,3 +85,52 @@ END
 
 
 end
+
+
+describe "Kwery::Query.new" do
+
+  it "returns Kwery::MySQLQuery object" do
+    Kwery::Query.new(nil).should be_a_kind_of(Kwery::MySQLQuery)
+  end
+
+end
+
+
+describe "Kwery::Column.new" do
+
+  it "returns Kwery::MySQLColumn object" do
+    Kwery::Column.new('name', :integer, nil, nil).should be_a_kind_of(Kwery::MySQLColumn)
+  end
+
+end
+
+
+describe "Kwery::MySQLColumn.to_sql" do
+
+  it "appends 'null default null' when nullable and no default value" do
+    class Foo1
+      include Kwery::Model
+      create_table("foo1") do |t|
+        t.timestamp(:start_at)
+      end
+    end
+    expected =  "create table foo1 (\n"
+    expected << "  start_at           timestamp       null default null\n"
+    expected << ")"
+    Foo1.to_sql.should == expected
+  end
+
+  it "appends 'default 0' when not null and no default value" do
+    class Foo2
+      include Kwery::Model
+      create_table("foo2") do |t|
+        t.timestamp(:stop_at) {|c| c.not_null }
+      end
+    end
+    expected =  "create table foo2 (\n"
+    expected << "  stop_at            timestamp       not null default 0\n"
+    expected << ")"
+    Foo2.to_sql.should == expected
+  end
+
+end

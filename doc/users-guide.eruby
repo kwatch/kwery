@@ -137,11 +137,11 @@ p konata  #=> {"id"=>4, "name"=>"Konata", "desc"=>nil, "team_id"=>2, ... }
 
 The followings are equivarent each other.
 
-* q.get('members') { q.where(:name, 'Haruhi') }
-* q.get('members') { q.where('name', 'Haruhi') }
-* q.get('members') { q.where('name = ', 'Haruhi') }
-* q.get('members') { q.where('name = %s', ['Haruhi']) }
-* q.get('members') { q.where("name = 'Haruhi'") }
+.* q.get('members') { q.where(:name, 'Haruhi') }
+.* q.get('members') { q.where('name', 'Haruhi') }
+.* q.get('members') { q.where('name = ', 'Haruhi') }
+.* q.get('members') { q.where('name = %s', ['Haruhi']) }
+.* q.get('members') { q.where("name = 'Haruhi'") }
 
 (experimental)
 Kwery provides a convenient method 'q.get!()'.
@@ -229,11 +229,6 @@ p members    #=> [{"name"=>"Haruhi", "id"=>1},
              #    {"name"=>"Mikuru", "id"=>2},
              #    {"name"=>"Yuki", "id"=>3}]
 .--------------------
-
-.? result
-.==================== 051_select_from1.result
-$ ruby select_from1.rb
-.====================
 
 It is able to specify class object as which records are get.
 
@@ -420,8 +415,8 @@ class Team
     {{*t.string(:name, 255) {|c| c.not_null.unique }*}}
     {{*t.text(:desc)*}}
     {{*t.integer(:leader_id) {|c| c.references('members') }*}}
-    {{*t.timestamp(:created_at)*}}
-    {{*t.timestamp(:updated_at)*}}
+    {{*t.timestamp(:created_at) {|c| c.not_null }*}}
+    {{*t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }*}}
   end
 
   attr_accessor :leader
@@ -436,8 +431,8 @@ class Member
     {{*t.string(:name, 255) {|c| c.not_null }*}}
     {{*t.text(:desc)*}}
     {{*t.integer(:team_id) {|c| c.references('teams') }*}}
-    {{*t.timestamp(:created_at)*}}
-    {{*t.timestamp(:updated_at)*}}
+    {{*t.timestamp(:created_at) {|c| c.not_null }*}}
+    {{*t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }*}}
   {{*end*}}
 
   attr_accessor :team
@@ -454,8 +449,8 @@ if __FILE__ == $0
              #   name               varchar(255)    not null unique,
              #   `desc`             text           ,
              #   leader_id          integer         references members(id),
-             #   created_at         timestamp      ,
-             #   updated_at         timestamp      
+             #   created_at         timestamp       not null default 0,
+             #   updated_at         timestamp       not null default current_timestamp
              # )
   q.execute(sql)
   sql = {{*Member.to_sql*}}
@@ -465,8 +460,8 @@ if __FILE__ == $0
              #   name               varchar(255)    not null,
              #   `desc`             text           ,
              #   team_id            integer         references teams(id),
-             #   created_at         timestamp      ,
-             #   updated_at         timestamp      
+             #   created_at         timestamp       not null default 0,
+             #   updated_at         timestamp       not null default current_timestamp
              # )
   q.execute(sql)
 end
@@ -634,11 +629,6 @@ p members    #=> [#<Member @name="Haruhi", @id=1>,
              #    #<Member @name="Mikuru", @id=2>,
              #    #<Member @name="Yuki", @id=3>]
 .--------------------
-
-.? result
-.==================== 051_select_from1.result
-$ ruby select_from1.rb
-.====================
 
 It is able to specify class object as which records are get.
 

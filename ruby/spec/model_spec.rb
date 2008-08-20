@@ -27,13 +27,13 @@ now = :current_timestamp
 class Team
   include Kwery::Model
   create_table('teams') do |t|
-    t.integer(:id)  { q.primary_key.serial }
-    t.string(:name) { q.not_null.unique }
+    t.integer(:id)  {|c| c.primary_key.serial }
+    t.string(:name) {|c| c.not_null.unique }
     t.text(:desc)
-    t.integer(:owner_id) { q.references('members') }
-    t.timestamp(:created_at) { q.not_null.default(:current_timestamp) }
-    t.timestamp(:updated_at) { q.not_null }
-    t.boolean(:deleted) { q.not_null.default(false) }
+    t.integer(:owner_id) {|c| c.references('members') }
+    t.timestamp(:created_at) {|c| c.not_null.default(:current_timestamp) }
+    t.timestamp(:updated_at) {|c| c.not_null }
+    t.boolean(:deleted) {|c| c.not_null.default(false) }
   end
   attr_accessor :owner
 end
@@ -41,14 +41,14 @@ end
 class Member
   include Kwery::Model
   create_table('members') do |t|
-    t.integer(:id) { q.primary_key.serial }
-    t.string(:name, 64) { q.not_null }
+    t.integer(:id) {|c| c.primary_key.serial }
+    t.string(:name, 64) {|c| c.not_null }
     t.text(:desc)
-    t.integer(:team_id) { q.not_null.references('teams') }
+    t.integer(:team_id) {|c| c.not_null.references('teams') }
     t.date(:birth)
-    t.timestamp(:updated_at) { q.not_null.on_update(:current_timestamp) }
     t.timestamp(:created_at) {|c| }
-    t.boolean(:deleted) { q.not_null.default(false) }
+    t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }
+    t.boolean(:deleted) {|c| c.not_null.default(false) }
   end
   attr_accessor :team
 end
@@ -60,16 +60,16 @@ describe 'Kwery::Model.create_table' do
   q.execute("drop table if exists #{Member.__table__}")
 
   col_names1 = [:id, :name, :desc, :owner_id, :created_at, :updated_at, :deleted]
-  col_names2 = [:id, :name, :desc, :team_id, :birth, :updated_at, :created_at, :deleted]
+  col_names2 = [:id, :name, :desc, :team_id, :birth, :created_at, :updated_at, :deleted]
 
   it "sets @__columns___ to list of Columns." do
     Team.__columns__.should be_a_kind_of(Array)
     Team.__columns__.length.should == 7
-    Team.__columns__.each { q.should be_a_kind_of(Kwery::Column) }
+    Team.__columns__.each {|x| x.should be_a_kind_of(Kwery::Column) }
     Team.__columns__.collect {|x| x._name }.should == col_names1
     Member.__columns__.should be_a_kind_of(Array)
     Member.__columns__.length.should == 8
-    Member.__columns__.each { q.should be_a_kind_of(Kwery::Column) }
+    Member.__columns__.each {|x| x.should be_a_kind_of(Kwery::Column) }
     Member.__columns__.collect {|x| x._name }.should == col_names2
   end
 
@@ -98,7 +98,7 @@ create table teams (
   `desc`             text           ,
   owner_id           integer         references members(id),
   created_at         timestamp       not null default current_timestamp,
-  updated_at         timestamp       not null,
+  updated_at         timestamp       not null default 0,
   deleted            boolean         not null default false
 )
 END
@@ -112,8 +112,8 @@ create table members (
   `desc`             text           ,
   team_id            integer         not null references teams(id),
   birth              date           ,
-  updated_at         timestamp       not null on update current_timestamp,
-  created_at         timestamp      ,
+  created_at         timestamp       null default null,
+  updated_at         timestamp       not null default current_timestamp,
   deleted            boolean         not null default false
 )
 END

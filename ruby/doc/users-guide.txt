@@ -137,11 +137,11 @@ p konata  #=> {"id"=>4, "name"=>"Konata", "desc"=>nil, "team_id"=>2, ... }
 
 The followings are equivarent each other.
 
-* q.get('members') { q.where(:name, 'Haruhi') }
-* q.get('members') { q.where('name', 'Haruhi') }
-* q.get('members') { q.where('name = ', 'Haruhi') }
-* q.get('members') { q.where('name = %s', ['Haruhi']) }
-* q.get('members') { q.where("name = 'Haruhi'") }
+.* q.get('members') { q.where(:name, 'Haruhi') }
+.* q.get('members') { q.where('name', 'Haruhi') }
+.* q.get('members') { q.where('name = ', 'Haruhi') }
+.* q.get('members') { q.where('name = %s', ['Haruhi']) }
+.* q.get('members') { q.where("name = 'Haruhi'") }
 
 (experimental)
 Kwery provides a convenient method 'q.get!()'.
@@ -325,6 +325,7 @@ You can specify 'id' to update.
 
 (experimental)
 Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
 
 .-------------------- 063_update2.rb
 q.update!('members', values, :name, 'Haruhi')
@@ -419,8 +420,8 @@ class Team
     {{*t.string(:name, 255) {|c| c.not_null.unique }*}}
     {{*t.text(:desc)*}}
     {{*t.integer(:leader_id) {|c| c.references('members') }*}}
-    {{*t.timestamp(:created_at)*}}
-    {{*t.timestamp(:updated_at)*}}
+    {{*t.timestamp(:created_at) {|c| c.not_null }*}}
+    {{*t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }*}}
   end
 
   attr_accessor :leader
@@ -435,8 +436,8 @@ class Member
     {{*t.string(:name, 255) {|c| c.not_null }*}}
     {{*t.text(:desc)*}}
     {{*t.integer(:team_id) {|c| c.references('teams') }*}}
-    {{*t.timestamp(:created_at)*}}
-    {{*t.timestamp(:updated_at)*}}
+    {{*t.timestamp(:created_at) {|c| c.not_null }*}}
+    {{*t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }*}}
   {{*end*}}
 
   attr_accessor :team
@@ -771,6 +772,7 @@ pp q.select(Team, 'id, name, leader_id')
 
 (experimental)
 Kwery provides Kwery::Query#update!() for convenience.
+This is an experimental method, so it may be changed or removed in the future version.
 
 .-------------------- 163_update2.rb
 .#+++
