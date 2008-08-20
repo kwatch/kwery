@@ -40,15 +40,12 @@ module Kwery
       return self
     end
 
-    def auto_increment
-      @_serial = true
-      return self
-    end
-
     def serial
       @_serial = true
       return self
     end
+
+    alias auto_increment serial
 
     def unique
       @_unique = true
