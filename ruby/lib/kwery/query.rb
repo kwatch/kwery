@@ -9,12 +9,16 @@
 module Kwery
 
 
-  module QueryBuilder
+  module Common
 
-    attr_accessor :_table, :_where, :_order_by, :_group_by, :_having, :_limit, :_join
-
-    def clear
-      @_table = @_where = @_order_by = @_group_by = @_having = @_limit = @_join = nil
+    def to_table_name(table)
+      t = nil
+      if    table.is_a?(String) ;  t = table
+      elsif table.is_a?(Class)  ;  t = table.__table__
+      elsif table.is_a?(Model)  ;  raise ArgumentError.new("Model not allowed.")
+      else                      ;  raise ArgumentError.new("invalid table object.")
+      end
+      return @table_prefix ? @table_prefix + t : t
     end
 
     def escape_string(val)
@@ -34,6 +38,27 @@ module Kwery
       when Symbol  ;  return val.to_s
       else         ;  return val.to_s
       end
+    end
+
+  end
+
+
+  class QueryBuilder
+    include Common
+
+    attr_accessor :_table, :_where, :_order_by, :_group_by, :_having, :_limit, :_join
+
+    class <<self
+      #attr_accessor :default_class
+      alias __new__ new
+    end
+
+    def initialize(table_name=nil)
+      @_table = table_name
+    end
+
+    def clear
+      @_table = @_where = @_order_by = @_group_by = @_having = @_limit = @_join = nil
     end
 
     def build_select_sql(arg, id=nil)
@@ -256,31 +281,40 @@ module Kwery
   end
 
 
-  module QueryExecutor
+  class Query
+    include Common
 
-    attr_accessor :conn, :builder, :output, :table_prefix
+    attr_accessor :conn, :output, :table_prefix
 
-    def set_table(table)
-      @builder._table = to_table_name(table)
+    class <<self
+      #attr_accessor :default_class
+      alias __new__ new
     end
-    protected :set_table
 
-    def to_table_name(table)
-      t = nil
-      if    table.is_a?(String) ;  t = table
-      elsif table.is_a?(Class)  ;  t = table.__table__
-      elsif table.is_a?(Model)  ;  raise ArgumentError.new("Model not allowed.")
-      else                      ;  raise ArgumentError.new("invalid table object.")
-      end
-      return @table_prefix ? @table_prefix + t : t
+    def initialize(conn)
+      @conn = conn
+      @auto_free = true
     end
 
     def get(table, id=nil)
-      set_table(table)
-      yield(@builder) if block_given?
-      sql = @builder.build_select_sql('*', id)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(:id, id) if id
+      yield(builder) if block_given?
+      return _get(table, builder)
+    end
+
+    ## (experimental)
+    def get!(table, key, val=UNDEFINED)
+      buidler = QueryBuilder.new(to_table_name(table))
+      buidler.where(key, val)
+      yield(builder) if block_given?
+      return _get(table, builder)
+    end
+
+    def _get(table, builder)  # :nodoc:
+      sql = builder.build_select_sql('*')
       result = execute(sql)
-      @builder.clear()
+      #builder.clear()
       if table.is_a?(String)
         ret = result.fetch_hash()
       else
@@ -294,12 +328,6 @@ module Kwery
       end
       result.free() if @auto_free
       return ret
-    end
-
-    ## (experimental)
-    def get!(table, key, val=UNDEFINED)
-      @builder.where(key, val)
-      return get(table)
     end
 
     def _collect_models(result, model_class, list=[])  # :nodoc:
@@ -316,12 +344,24 @@ module Kwery
     protected :_collect_models
 
     def get_all(table, key=UNDEFINED, val=UNDEFINED)
-      set_table(table)
-      @builder.where(key, val) unless key.equal?(UNDEFINED)
-      yield(@builder) if block_given?
-      sql = @builder.build_select_sql('*')
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(key, val) unless key.equal?(UNDEFINED)
+      yield(builder) if block_given?
+      return _get_all(table, builder)
+    end
+
+    ## (experimental)
+    def get_all!(table, key, val=UNDEFINED)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(key, val)
+      yield(builder) if block_given?
+      return _get_all(table, builder)
+    end
+
+    def _get_all(table, builder)  # :nodoc:
+      sql = builder.build_select_sql('*')
       result = execute(sql)
-      @builder.clear()
+      #builder.clear()
       list = []
       if table.is_a?(String) ; result.each_hash {|hash| list << hash }
       else                   ; _collect_models(result, table, list)
@@ -330,18 +370,12 @@ module Kwery
       return list
     end
 
-    ## (experimental)
-    def get_all!(table, key, val=UNDEFINED)
-      @builder.where(key, val)
-      return get_all(table)
-    end
-
     def select(table, columns=nil, klass=nil)
-      set_table(table)
-      yield(@builder) if block_given?
-      sql = @builder.build_select_sql(columns)
+      builder = QueryBuilder.new(to_table_name(table))
+      yield(builder) if block_given?
+      sql = builder.build_select_sql(columns)
       result = execute(sql)
-      @builder.clear()
+      #builder.clear()
       list = []
       if klass.nil?
         if    table.is_a?(String)   ; result.each_hash {|hash| list << hash }
@@ -365,11 +399,11 @@ module Kwery
     end
 
     def select_only(table, column)
-      set_table(table)
-      yield(@builder) if block_given?
-      sql = @builder.build_select_sql(column)
+      builder = QueryBuilder.new(to_table_name(table))
+      yield(builder) if block_given?
+      sql = builder.build_select_sql(column)
       result = execute(sql)
-      @builder.clear()
+      #builder.clear()
       #return result.collect {|arr| arr.first }
       list = []
       result.each_array {|arr| list << arr.first }
@@ -380,9 +414,9 @@ module Kwery
     def insert(table, values=nil)
       return table.__insert__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to insert are required.") if values.nil?
-      set_table(table)
-      sql = @builder.build_insert_sql(values)
-      @builder.clear()
+      builder = QueryBuilder.new(to_table_name(table))
+      sql = builder.build_insert_sql(values)
+      #builder.clear()
       return execute(sql)
     end
 
@@ -393,51 +427,65 @@ module Kwery
     def update(table, values=nil, id=nil)
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
-      set_table(table)
-      yield(@builder) if block_given?
-      unless id || @_where
-        raise ArgumentError.new("update condition is reqiured.")
-      end
-      sql = @builder.build_update_sql(values, id)
-      @builder.clear()
-      return execute(sql)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(:id, id) if id
+      yield(builder) if block_given?
+      return _update(table, builder, values)
     end
 
     ## (experimental)
     def update!(table, values, key, val=UNDEFINED)
-      @builder.where(key, val)
-      return update(table, values)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(key, val)
+      yield(builder) if block_given?
+      return _update(table, builder, values)
     end
 
+    def _update(table, builder, values)  # :nodoc:
+      unless builder._where
+        raise ArgumentError.new("update condition is reqiured.")
+      end
+      sql = builder.build_update_sql(values)
+      #builder.clear()
+      return execute(sql)
+    end
+
+
     def update_all(table, values)
-      set_table(table)
-      sql = @builder.build_update_sql(values, nil)
-      @builder.clear()
+      builder = QueryBuilder.new(to_table_name(table))
+      sql = builder.build_update_sql(values)
+      #builder.clear()
       return execute(sql)
     end
 
     def delete(table, id=nil)
       return table.__delete__(self) if table.is_a?(Model)
-      set_table(table)
-      yield(@builder) if block_given?
-      unless id || @_where
-        raise ArgumentError.new("delete condition is reqiured.")
-      end
-      sql = @builder.build_delete_sql(id)
-      @builder.clear()
-      return execute(sql)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(:id, id) if id
+      yield(builder) if block_given?
+      return _delete(table, builder)
     end
 
     ## (experimental)
     def delete!(table, key, val=UNDEFINED)
-      @builder.where(key, val)
-      return delete(table)
+      builder = QueryBuilder.new(to_table_name(table))
+      builder.where(key, val)
+      return _delete(table)
+    end
+
+    def _delete(table, builder)  # :nodoc:
+      unless builder._where
+        raise ArgumentError.new("delete condition is reqiured.")
+      end
+      sql = builder.build_delete_sql()
+      #builder.clear()
+      return execute(sql)
     end
 
     def delete_all(table)
-      set_table(table)
-      sql = @builder.build_delete_sql(nil)
-      @builder.clear()
+      builder = QueryBuilder.new(to_table_name(table))
+      sql = builder.build_delete_sql()
+      #builder.clear()
       return execute(sql)
     end
 
@@ -462,7 +510,7 @@ module Kwery
     def transaction
       return start_transaction() unless block_given?
       start_transaction()
-      yield(@builder)
+      yield(self)
       return commit()
     rescue Exception => ex
       rollback()
@@ -486,12 +534,12 @@ module Kwery
 
   module QueryHelper
 
-    def _bind(items, table, item_column, table_column, attr, multiple, not_null)
+    def _bind(items, table, item_column, table_column, attr, multiple, not_null)  # :nodoc:
       item_column = item_column.to_s
       id_list = items.collect {|item| item[item_column] }
       id_list = id_list.select {|v| v } unless not_null
       if id_list.empty?
-        self.clear
+        #self.clear
       else
         refs = self.get_all(table) {|c| c.where_in(table_column, id_list) }
         table_column = table_column.to_s
@@ -513,8 +561,7 @@ module Kwery
       id_list = items.collect {|item| item[column] }
       id_list = id_list.select {|v| v } unless not_null
       return items if id_list.empty?
-      yield(self) if block_given?
-      refs = self.get_all(table) {|c| c.where_in(:id, id_list) }
+      refs = self.get_all(table) {|c| c.where_in(:id, id_list); yield(c) if block_given? }
       hash = refs.index_by('id')
       column = column.to_s
       items.each {|item| item[attr] = hash[item[column]] }
@@ -528,8 +575,7 @@ module Kwery
       id_list = items.collect {|item| item['id'] }
       id_list = id_list.select {|v| v } unless not_null
       return items if id_list.empty?
-      yield(self) if block_given?
-      refs = self.get_all(table) {|c| c.where_in(column, id_list) }
+      refs = self.get_all(table) {|c| c.where_in(column, id_list); yield(c) if block_given? }
       if multiple
         hash = refs.group_by(column)
         items.each {|item| item[attr] = hash[item['id']] || [] }
@@ -544,24 +590,7 @@ module Kwery
 
 
   class Query
-    include QueryBuilder
-    include QueryExecutor
     include QueryHelper
-
-    class <<self
-      attr_accessor :default_class
-    end
-
-    def initialize(conn)
-      @conn = conn
-      @builder = self
-      @auto_free = true
-    end
-
-    class <<self
-      alias __new__ new
-    end
-
   end
 
 

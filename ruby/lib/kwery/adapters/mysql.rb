@@ -19,13 +19,7 @@ HAS_MOTTO = arr.all? {|m| ::Mysql::Result.method_defined?(m) }
 
 module Kwery
 
-
-  class MySQLQuery < Query
-
-    def initialize(*args)
-      super
-      @auto_free = false
-    end if HAS_MOTTO
+  module MySQLCommon
 
     MYSQL_KEYWORDS = %w[
           add all alter analyze and as asc asensitive
@@ -80,6 +74,23 @@ module Kwery
     def quote_keyword(word)
       return MYSQL_KEYWORD_TABLE[word] ? "`#{word}`" : word
     end
+
+  end
+
+
+  class MySQLQueryBuilder < QueryBuilder
+    include MySQLCommon
+
+  end
+
+
+  class MySQLQuery < Query
+    include MySQLCommon
+
+    def initialize(*args)
+      super
+      @auto_free = false
+    end if HAS_MOTTO
 
     def execute(sql)
       @output << sql << "\n" if @output
@@ -170,6 +181,15 @@ module Kwery
   end
 
 
+  class QueryBuilder
+
+    def self.new(*args)
+      return MySQLQueryBuilder.__new__(*args)  # QueryBuilder.new returns MySQLQueryBuilder object
+    end
+
+  end
+
+
   def self.connect(host=nil, user=nil, passwd=nil, dbname=nil, options=nil)
     return ::Mysql.connect(host||'loalhost', user||'root', passwd, dbname)
   end
@@ -181,9 +201,10 @@ module Kwery
 
 
   class MySQLColumn < Column
+    include MySQLCommon
 
-    def to_sql(query)
-      sql = super(query)
+    def to_sql()
+      sql = super
       if @_type == :timestamp && @_default.nil?
         sql << (@_not_null ? ' default 0' : ' null default null')
       end
@@ -197,6 +218,20 @@ module Kwery
 
     def self.new(*args)
       return MySQLColumn.__new__(*args)  # Column.new returns MySQLColumn object
+    end
+
+  end
+
+
+  class MySQLTableBuilder < TableBuilder
+    include MySQLCommon
+  end
+
+
+  class TableBuilder
+
+    def self.new(*args)
+      return MySQLTableBuilder.__new__(*args)  # TableBuilder.new returns MySQLTableBuilder object
     end
 
   end

@@ -9,6 +9,7 @@ module Kwery
 
 
   class Column
+    include Common
 
     class NULL; end
 
@@ -69,26 +70,26 @@ module Kwery
     #end
     #++
 
-    def to_sql(query)
-      s = _build_column_decl(query)
+    def to_sql()
+      s = _build_column_decl()
       s << " primary key" if @_primary_key
       s << " not null" if @_not_null
-      s << _build_serial_constraint(query) if @_serial
+      s << _build_serial_constraint() if @_serial
       s << " unique" if @_unique
       s << " default null" if @_default.equal?(Column::NULL)
-      s << " default #{query.quote_value(@_default)}" if !@_default.nil?
-      #s << " on update #{query.quote_value(@_on_update)}" if !@_on_update.nil?
+      s << " default #{quote_value(@_default)}" if !@_default.nil?
+      #s << " on update #{quote_value(@_on_update)}" if !@_on_update.nil?
       r = @_references
-      s << " references #{query.quote_keyword(query.to_table_name(r[0]))}(#{r[1]})" if r
+      s << " references #{quote_keyword(to_table_name(r[0]))}(#{r[1]})" if r
       return s
     end
 
-    def _build_column_decl(query)
+    def _build_column_decl()
       s = @_width2 ? "(#{@_width}, #{@_width2})" : @_width ? "(#{@_width})" : ""
-      return "%-18s %-15s" % [query.quote_keyword(@_name), "#{@_type}#{s}"]
+      return "%-18s %-15s" % [quote_keyword(@_name), "#{@_type}#{s}"]
     end
 
-    def _build_serial_constraint(query)
+    def _build_serial_constraint()
       return @_serial ? " auto_increment" : nil
     end
 
@@ -96,6 +97,7 @@ module Kwery
 
 
   class TableBuilder
+    include Common
 
     class <<self
       alias __new__ new
@@ -122,9 +124,8 @@ module Kwery
     end
 
     def to_sql
-      q = @query
-      s =  "create table #{q.quote_keyword(q.to_table_name(@table_name))} (\n  "
-      s << @columns.collect {|column| column.to_sql(q) }.join(",\n  ") << "\n)"
+      s =  "create table #{quote_keyword(to_table_name(@table_name))} (\n  "
+      s << @columns.collect {|column| column.to_sql() }.join(",\n  ") << "\n)"
       return s
     end
 

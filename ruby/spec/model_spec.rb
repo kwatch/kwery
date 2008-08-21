@@ -186,7 +186,7 @@ describe "Kwery::Model#__update__" do
   end
 
   it "sets updated_at column automatically" do
-    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) {|b| b.where(:name, 'Haruhi') }
     haruhi.should_not == nil
     created_at = haruhi.created_at
     updated_at = haruhi.updated_at
@@ -207,10 +207,10 @@ end
 describe "Kwery::Model.__delete__" do
 
   it "deletes model object" do
-    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) {|b| b.where(:name, 'Haruhi') }
     haruhi.should_not == nil
     q.delete(haruhi)
-    haruhi = q.get(Member) { q.where(:name, 'Haruhi') }
+    haruhi = q.get(Member) {|b| b.where(:name, 'Haruhi') }
     haruhi.should == nil
   end
 

@@ -121,13 +121,13 @@ describe 'Kwery::QueryExecutor#update' do
 
   it "updates data with conditions" do
     desc = "Haruhi's brigate"  # contains "'"
-    q.update('teams', {:desc=>desc, :updated_at=>Time.now}) { q.where('name = ', 'sos') }
+    q.update('teams', {:desc=>desc, :updated_at=>Time.now}) {|c| c.where('name = ', 'sos') }
     hash = q.get('teams', 1)
     hash['desc'].should == desc
   end
 
   it "updates data with id" do
-    mikuru = q.get('members') { q.where(:name, 'Mikuru') }
+    mikuru = q.get('members') {|c| c.where(:name, 'Mikuru') }
     mikuru['desc'].should == nil
     desc = 'Future-woman'
     q.update('members', {:desc=>desc, :updated_at=>now}, mikuru['id'])
@@ -135,13 +135,13 @@ describe 'Kwery::QueryExecutor#update' do
     mikuru['desc'].should == desc
   end
 
-  it "throws ArugmentError when condition is not specified" do
+  it "throws ArgugmentError when condition is not specified" do
     msg = 'update condition is reqiured.'
     proc { q.update('teams', {:owner_id=>1}) }.should raise_error(ArgumentError, msg)
   end
 
   it "can take Model class" do
-    miyuki = q.get(Member) { q.where('name', 'Miyuki') }
+    miyuki = q.get(Member) {|c| c.where('name', 'Miyuki') }
     miyuki.desc.should == nil
     miyuki.desc = 'Miyukichi'
     q.update(Member, {:desc=>miyuki.desc}, miyuki.id)
@@ -149,7 +149,7 @@ describe 'Kwery::QueryExecutor#update' do
   end
 
   it "can take model object" do
-    tsukasa = q.get(Member) { q.where('name', 'Tsukasa') }
+    tsukasa = q.get(Member) {|c| c.where('name', 'Tsukasa') }
     tsukasa.desc.should == nil
     tsukasa.desc = 'Barusamikosu'
     q.update(tsukasa)
@@ -169,7 +169,7 @@ describe 'Kwery::QueryExecutor#get' do
   end
 
   it "can take a block" do
-    hash = q.get('members') { q.where(:id, 1) }
+    hash = q.get('members') {|c| c.where(:id, 1) }
     hash.should be_kind_of(Hash)
     hash['id'].to_i.should == 1
     hash['name'].should == 'Haruhi'
@@ -178,12 +178,12 @@ describe 'Kwery::QueryExecutor#get' do
   it "returns nil when data not found" do
     hash = q.get('members', 999)
     hash.should == nil
-    hash = q.get('members') { q.where(:name, 'Minoru') }
+    hash = q.get('members') {|c| c.where(:name, 'Minoru') }
     hash.should == nil
     #
     obj = q.get(Member, 999)
     obj.should == nil
-    obj = q.get(Member) { q.where(:name, 'Minoru') }
+    obj = q.get(Member) {|c| c.where(:name, 'Minoru') }
     obj.should == nil
   end
 
@@ -192,7 +192,7 @@ describe 'Kwery::QueryExecutor#get' do
     sos.should be_a_kind_of(Team)
     sos.name.should == 'sos'
     #
-    kagami = q.get(Member) { q.where(:name, 'Kagami') }
+    kagami = q.get(Member) {|c| c.where(:name, 'Kagami') }
     kagami.should be_a_kind_of(Member)
     kagami.name.should == 'Kagami'
   end
@@ -210,7 +210,7 @@ describe 'Kwery::QueryExecutor#get_all' do
   end
 
   it "can take a block" do
-    list = q.get_all('members') { q.where(:team_id, 1) }
+    list = q.get_all('members') {|c| c.where(:team_id, 1) }
     list.should be_a_kind_of(Array)
     list.first.should be_a_kind_of(Hash)
     list.length.should == 3
@@ -219,7 +219,7 @@ describe 'Kwery::QueryExecutor#get_all' do
   end
 
   it "can take where-clause" do
-    expected = q.get_all('members') { q.where(:team_id, 1) }
+    expected = q.get_all('members') {|c| c.where(:team_id, 1) }
     q.get_all('members', 'team_id = 1').should == expected
     q.get_all('members', :team_id, 1).should == expected
     q.get_all('members', 'team_id =', 1).should == expected
@@ -228,7 +228,7 @@ describe 'Kwery::QueryExecutor#get_all' do
   end
 
   it "returns empty Array when data not found" do
-    list = q.get_all('members') { q.where(:team_id, 999) }
+    list = q.get_all('members') {|c| c.where(:team_id, 999) }
     list.should be_a_kind_of(Array)
     list.length.should == 0
   end
@@ -244,7 +244,7 @@ describe 'Kwery::QueryExecutor#get_all' do
     end
     #
     ryouou_id = 2
-    members = q.get_all(Member) { q.where(:team_id, ryouou_id) }
+    members = q.get_all(Member) {|c| c.where(:team_id, ryouou_id) }
     members.each do |member|
       member.should be_a_kind_of(Member)
       member.team_id.should == ryouou_id
@@ -264,13 +264,13 @@ describe 'Kwery::QueryExecutor#select' do
   end
 
   it "can take a block" do
-    enum = q.select('members') { q.where(:team_id, 1) }
+    enum = q.select('members') {|c| c.where(:team_id, 1) }
     arr = enum.to_a
     arr.collect {|e| e['name'] }.should == ['Haruhi', 'Mikuru', 'Yuki']
   end
 
   it "can take column names" do
-    enum = q.select('members', 'id, name') { q.where(:team_id, 1) }
+    enum = q.select('members', 'id, name') {|c| c.where(:team_id, 1) }
     arr = enum.to_a
     arr.each {|h| h['id'] = h['id'].to_i }
     arr.should == [{'id'=>1, 'name'=>'Haruhi'}, {'id'=>2, 'name'=>'Mikuru'}, {'id'=>3, 'name'=>'Yuki'}]
@@ -281,12 +281,12 @@ describe 'Kwery::QueryExecutor#select' do
   end
 
   it "can take class object" do
-    enum = q.select('members', nil, Hash) { q.where(:team_id, 1) }
+    enum = q.select('members', nil, Hash) {|c| c.where(:team_id, 1) }
     enum.to_a[0].should be_a_kind_of(Hash)
-    enum = q.select('members', nil, Array) { q.where(:team_id, 1) }
+    enum = q.select('members', nil, Array) {|c| c.where(:team_id, 1) }
     enum.to_a[0].should be_a_kind_of(Array)
     enum.to_a[0][1].should == 'Haruhi'
-    enum = q.select('members', nil, Member1) { q.where(:team_id, 1) }
+    enum = q.select('members', nil, Member1) {|c| c.where(:team_id, 1) }
     enum.to_a[0].should be_a_kind_of(Member1)
     yuki = enum.to_a[2]
     yuki.name.should == 'Yuki'
@@ -305,7 +305,7 @@ END
 
   it "can take several table names" do
     columns = 'members.*, teams.name team_name'
-    enum = q.select('members, teams', columns) { q.where('members.team_id = teams.id').order_by('members.id') }
+    enum = q.select('members, teams', columns) {|c| c.where('members.team_id = teams.id').order_by('members.id') }
     arr = enum.to_a
     #collected = arr.collect {|e| [e['id'], e['name'], e['team_id'], e['team_name']].join(", ") }
     collected = arr.collect {|e| e.values_at(*%w[id name team_id team_name]).join(", ") }
@@ -315,7 +315,7 @@ END
 
   it "supports table name aliases" do
     columns = 'm.*, t.name team_name'
-    enum = q.select('members m, teams t', columns) { q.where('m.team_id = t.id').order_by('m.id') }
+    enum = q.select('members m, teams t', columns) {|c| c.where('m.team_id = t.id').order_by('m.id') }
     arr = enum.to_a
     #collected = arr.collect {|e| [e['id'], e['name'], e['team_id'], e['team_name']].join(", ") }
     collected = arr.collect {|e| e.values_at(*%w[id name team_id team_name]).join(", ") }
@@ -325,15 +325,15 @@ END
 
   it "supports join" do
     haruhi_id = 1
-    q.update('teams', {:owner_id=>haruhi_id}) { q.where(:name, 'sos') }
-    q.update('teams', {:owner_id=>nil}) { q.where(:name, 'ryouou') }
+    q.update('teams', {:owner_id=>haruhi_id}) {|c| c.where(:name, 'sos') }
+    q.update('teams', {:owner_id=>nil}) {|c| c.where(:name, 'ryouou') }
     #
-    enum = q.select('teams, members') { q.where('teams.owner_id = members.id').order_by('teams.id') }
+    enum = q.select('teams, members') {|c| c.where('teams.owner_id = members.id').order_by('teams.id') }
     arr = enum.to_a
     arr.length.should == 1
     #
     columns = 'teams.*, members.name owner_name'
-    enum = q.select('teams', columns) { q.left_outer_join('members', :owner_id).order_by('teams.id') }
+    enum = q.select('teams', columns) {|c| c.left_outer_join('members', :owner_id).order_by('teams.id') }
     arr = enum.to_a
     arr.length.should == 2
     collected = arr.collect {|e| e.values_at(*%w[id name owner_id owner_name]).join(', ') }
@@ -347,7 +347,7 @@ END
 
   it "supports join with specifying class object" do
     columns = 'teams.*, members.name owner_name'
-    enum = q.select('teams', columns, Array) { q.left_outer_join('members', :owner_id).order_by('teams.id') }
+    enum = q.select('teams', columns, Array) {|c| c.left_outer_join('members', :owner_id).order_by('teams.id') }
     arr = enum.to_a
     arr.length.should == 2
     arr[0].should be_a_kind_of(Array)
@@ -356,7 +356,7 @@ END
   it "can take Model class" do
     t1 = q.to_table_name(Member)
     t2 = q.to_table_name(Team)
-    enum = q.select(Member, t1+'.*') { q.left_outer_join(Team, :team_id).where("#{t2}.name", 'ryouou').order_by(t1+'.id') }
+    enum = q.select(Member, t1+'.*') {|c| c.left_outer_join(Team, :team_id).where("#{t2}.name", 'ryouou').order_by(t1+'.id') }
     arr = enum.to_a
     arr.length.should == 4
   end
@@ -368,13 +368,13 @@ describe 'Kwery::QueryExecutor#select_only' do
 
   it "returns an array of values, not hashes" do
     q.select_only('teams', :name).should == ['ryouou', 'sos']
-    arr = q.select_only('members', :name) { q.where(:team_id, 2).order_by(:name) }
+    arr = q.select_only('members', :name) {|c| c.where(:team_id, 2).order_by(:name) }
     arr.should == ['Kagami', 'Konata', 'Miyuki', 'Tsukasa']
   end
 
   it "can take Model class" do
-    q.select_only(Team, :name) { q.order_by(:name) }.should == ['ryouou', 'sos']
-    arr = q.select_only(Member, :name) { q.where(:team_id, 2).order_by(:name) }
+    q.select_only(Team, :name) {|c| c.order_by(:name) }.should == ['ryouou', 'sos']
+    arr = q.select_only(Member, :name) {|c| c.where(:team_id, 2).order_by(:name) }
     arr.should == ['Kagami', 'Konata', 'Miyuki', 'Tsukasa']
   end
 
@@ -400,7 +400,7 @@ describe 'Kwery::QueryHelper#bind_references_to' do
     proc {
       q.bind_references_to(teams, 'members', 'owner_id', 'owner')
     }.should raise_error(Exception)   #Kwery::SQL_ERROR_CLASS)
-    q.clear
+    #q.clear
   end
 
   it "sets nil when referenced item is not found." do
@@ -446,7 +446,7 @@ describe 'Kwery::QueryHelper#bin_referenced_from' do
     q.bind_referenced_from(members, 'teams', 'owner_id', 'owns', true, false)
     members.each do |member|
       if member['name'] == 'Haruhi'
-        member['owns'].should == q.get('teams') { q.where('name', 'sos') }
+        member['owns'].should == q.get('teams') {|c| c.where('name', 'sos') }
       else
         member['owns'].should == nil
       end
@@ -463,7 +463,7 @@ describe 'Kwery::QueryHelper#bin_referenced_from' do
     q.bind_referenced_from(members, Team, :owner_id, :owns, true, false)
     members.each do |member|
       if member.name == 'Haruhi'
-        haruhi = q.get(Team) { q.where(:name, 'sos') }
+        haruhi = q.get(Team) {|c| c.where(:name, 'sos') }
         member['owns'].id.should == haruhi.id
         member['owns'].name.should == haruhi.name
       else
@@ -478,7 +478,7 @@ describe 'Kwery::QueryHelper#bin_referenced_from' do
     teams = q.get_all('teams')
     members = q.get_all('members')
     teams.each {|team| team['members'].should == nil }
-    q.bind_referenced_from(teams, 'members', 'team_id', 'members') { q.order_by(:id) }
+    q.bind_referenced_from(teams, 'members', 'team_id', 'members') {|c| c.order_by(:id) }
     teams.each do |team|
       team['members'].should be_a_kind_of(Array)
       if team['name'] == 'sos'
@@ -508,7 +508,7 @@ describe 'Kwery::QueryHelper#bin_referenced_from' do
     teams = q.get_all(Team)
     members = q.get_all(Member)
     teams.each {|team| team[:members].should == nil }
-    q.bind_referenced_from(teams, Member, :team_id, :members) { q.order_by(:id) }
+    q.bind_referenced_from(teams, Member, :team_id, :members) {|c| c.order_by(:id) }
     teams.each do |team|
       team[:members].should be_a_kind_of(Array)
       if team.name == 'sos'
@@ -525,7 +525,7 @@ end
 describe 'Kwery::QueryExecutor#transaction' do
 
   it "commits when no errors" do
-    kagami = q.get('members') { q.where(:name, 'Kagami') }
+    kagami = q.get('members') {|c| c.where(:name, 'Kagami') }
     id = kagami['id']
     s = 'Hiiragi Kagami'
     q.transaction do
@@ -535,7 +535,7 @@ describe 'Kwery::QueryExecutor#transaction' do
   end
 
   it "rollbacks when error raised" do
-    tsukasa = q.get('members') { q.where(:name, 'Tsukasa') }
+    tsukasa = q.get('members') {|c| c.where(:name, 'Tsukasa') }
     id = tsukasa['id']
     s = 'Yo-ni-ge de reset'
     proc {
@@ -557,18 +557,18 @@ end
 describe 'Kwery::QueryExecutor#delete' do
 
   it "deletes data specified by id" do
-    miyuki = q.get('members') { q.where('name', 'Miyuki') }
+    miyuki = q.get('members') {|c| c.where('name', 'Miyuki') }
     q.delete('members', miyuki['id'])
-    q.get('members') { q.where('name', 'Miyuki') }.should == nil
+    q.get('members') {|c| c.where('name', 'Miyuki') }.should == nil
     q.get_all('members').length.should == 6
   end
 
   it "deletes data specified by block" do
-    ryouou = q.get('teams') { q.where('name', 'ryouou') }
+    ryouou = q.get('teams') {|c| c.where('name', 'ryouou') }
     id = ryouou['id']
-    q.delete('members') { q.where('team_id', id) }
+    q.delete('members') {|c| c.where('team_id', id) }
     q.get_all('members').length.should == 3
-    q.get_all('members') { q.where('team_id', id) }.length.should == 0
+    q.get_all('members') {|c| c.where('team_id', id) }.length.should == 0
   end
 
   it "throws ArugmentError when condition is not specified" do
@@ -578,7 +578,7 @@ describe 'Kwery::QueryExecutor#delete' do
 
   it "can take Model class" do
     q.get_all(Member).length == 2
-    q.delete(Member) { q.where(:name, 'ryouou') }
+    q.delete(Member) {|c| c.where(:name, 'ryouou') }
     q.get_all(Member).length == 1
     q.get_all(Member).first['name'] == 'sos'
   end
