@@ -486,53 +486,58 @@ module Kwery
 
   module QueryHelper
 
-    def collect_ref_items(items, local_key, table, remote_key, not_null=false)
-      list = items.collect {|item| item[local_key] }
-      list = list.select {|v| v } unless not_null
-      yield(self) if block_given?
-      cond = "#{remote_key} in (#{list.join(',')})"
-      ref_items = self.get_all(table) {|c| c.where(cond) }
-      return ref_items
-    end
-
-    def solve_belongs_to(items, from_attr, from_key, to_table, to_key='id', not_null=false)
-      #solve_has_one(items, from_attr, to_key, to_table, from_key, not_null)
-      ref_items = collect_ref_items(items, from_key, to_table, to_key);
-      hash = ref_items.index_by(to_key)
-      items.each do |item|
-        item[from_attr] = hash[item[from_key]]
-        #v = item[from_key]
-        #item[from_attr] = hash[v]
-        #hash[v][to_attr] = item if to_attr && hash[v]
-      end
-      nil
-    end
-
-    def solve_has_one(items, attr, from_key, from_table, to_key='id', not_null=false)
-      #solve_belongs_to(items, attr, to_key, from_table, from_key, not_null)
-      ref_items = collect_ref_items(items, to_key, from_table, from_key)
-      hash = ref_items.index_by(from_key)
-      items.each do |item|
-        item[attr] = hash[item[to_key]]
-        #v = item[to_key]
-        #item[to_attr] = hash[v]
-        #hash[v][from_attr] = item if from_attr && hash[v]
-      end
-    end
-
-    def solve_has_many(items, attr, from_key, from_table, to_key='id', not_null=false)
-      ref_items = collect_ref_items(items, to_key, from_table, from_key, not_null)
-      hash = ref_items.group_by(from_key)
-      if not_null
-        items.each do |item|
-          item[attr] = hash[item[to_key]] || []
-        end
+    def _bind(items, table, item_column, table_column, attr, multiple, not_null)
+      item_column = item_column.to_s
+      id_list = items.collect {|item| item[item_column] }
+      id_list = id_list.select {|v| v } unless not_null
+      if id_list.empty?
+        self.clear
       else
-        items.each do |item|
-          item[attr] = (v = item[to_key]).nil? ? nil : (hash[v] || [])
+        refs = self.get_all(table) {|c| c.where_in(table_column, id_list) }
+        table_column = table_column.to_s
+        attr = attr.to_s
+        if multiple
+          hash = refs.group_by(table_column)
+          items.each {|item| item[attr] = hash[item[item_column]] || [] }
+        else
+          hash = refs.index_by(table_column)
+          items.each {|item| item[attr] = hash[item[item_column]] }
         end
       end
-      nil
+    end
+
+    def bind_references_to(items, table, column, attr, not_null=true)
+      #yield(self) if block_given?
+      #_bind(item, table, column, 'id', attr, false, not_null)
+      #nil
+      id_list = items.collect {|item| item[column] }
+      id_list = id_list.select {|v| v } unless not_null
+      return items if id_list.empty?
+      yield(self) if block_given?
+      refs = self.get_all(table) {|c| c.where_in(:id, id_list) }
+      hash = refs.index_by('id')
+      column = column.to_s
+      items.each {|item| item[attr] = hash[item[column]] }
+      return items
+    end
+
+    def bind_referenced_from(items, table, column, attr, not_null=true, multiple=true)
+      #yield(self) if block_given?
+      #_bind(item, table, 'id', column, attr, multiple, not_null)
+      #nil
+      id_list = items.collect {|item| item['id'] }
+      id_list = id_list.select {|v| v } unless not_null
+      return items if id_list.empty?
+      yield(self) if block_given?
+      refs = self.get_all(table) {|c| c.where_in(column, id_list) }
+      if multiple
+        hash = refs.group_by(column)
+        items.each {|item| item[attr] = hash[item['id']] || [] }
+      else
+        hash = refs.index_by(column)
+        items.each {|item| item[attr] = hash[item['id']] }
+      end
+      return items
     end
 
   end

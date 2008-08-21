@@ -381,18 +381,26 @@ describe 'Kwery::QueryExecutor#select_only' do
 end
 
 
-describe 'Kwery::QueryHelper#solve_belongs_to' do
+describe 'Kwery::QueryHelper#bind_references_to' do
 
-  it "sets referenced item to attribute." do
+  it "sets reference items to attribute." do
     teams = q.get_all('teams')
     members = q.get_all('members')
     members.each do |member|
       member['team'].should == nil
     end
-    q.solve_belongs_to(members, 'team', 'team_id', 'teams')
+    q.bind_references_to(members, 'teams', 'team_id', 'team')
     members.each do |member|
       member['team'].should == q.get('teams', member['team_id'])
     end
+  end
+
+  it "causes SQL error if null column exists" do
+    teams = q.get_all('teams')
+    proc {
+      q.bind_references_to(teams, 'members', 'owner_id', 'owner')
+    }.should raise_error(Exception)   #Kwery::SQL_ERROR_CLASS)
+    q.clear
   end
 
   it "sets nil when referenced item is not found." do
@@ -401,7 +409,7 @@ describe 'Kwery::QueryHelper#solve_belongs_to' do
     teams.each do |team|
       team['owner'].should == nil
     end
-    q.solve_belongs_to(teams, 'owner', 'owner_id', 'members')
+    q.bind_references_to(teams, 'members', 'owner_id', 'owner', false)
     teams.find {|team| team['name'] == 'sos' }['owner'].should == q.get('members', 1)
     teams.find {|team| team['name'] == 'ryouou' }['owner'].should == nil
   end
@@ -414,7 +422,7 @@ describe 'Kwery::QueryHelper#solve_belongs_to' do
     members.each do |member|
       member.team.should == nil
     end
-    q.solve_belongs_to(members, :team, :team_id, Team)
+    q.bind_references_to(members, Team, :team_id, :team)
     members.each do |member|
       member.team.id.should == q.get(Team, member.team_id).id
       member.team.name.should == q.get(Team, member.team_id).name
@@ -424,16 +432,18 @@ describe 'Kwery::QueryHelper#solve_belongs_to' do
 end
 
 
-describe 'Kwery::QueryHelper#solve_has_one' do
+describe 'Kwery::QueryHelper#bin_referenced_from' do
 
-  it "sets referenced item to attribute." do
+  ## multiple=false
+
+  it "sets referenced item to attribute when multiple=false." do
     teams = q.get_all('teams')
     members = q.get_all('members')
     members.each do |member|
       member['team'].should == nil
     end
     members.each {|member| member['owns'].should == nil }
-    q.solve_has_one(members, 'owns', 'owner_id', 'teams')
+    q.bind_referenced_from(members, 'teams', 'owner_id', 'owns', true, false)
     members.each do |member|
       if member['name'] == 'Haruhi'
         member['owns'].should == q.get('teams') { q.where('name', 'sos') }
@@ -443,14 +453,14 @@ describe 'Kwery::QueryHelper#solve_has_one' do
     end
   end
 
-  it "can take model objects and Model class" do
+  it "can take model objects and Model class when multiple=false." do
     teams = q.get_all(Team)
     members = q.get_all(Member)
     members.each do |member|
       member.team.should == nil
     end
     members.each {|member| member['owns'].should == nil }
-    q.solve_has_one(members, :owns, :owner_id, Team)
+    q.bind_referenced_from(members, Team, :owner_id, :owns, true, false)
     members.each do |member|
       if member.name == 'Haruhi'
         haruhi = q.get(Team) { q.where(:name, 'sos') }
@@ -462,16 +472,13 @@ describe 'Kwery::QueryHelper#solve_has_one' do
     end
   end
 
-end
+  ## multiple=true
 
-
-describe 'Kwery::QweryHelper#solve_has_many' do
-
-  it "sets referenced all items to attribute" do
+  it "sets referenced all items to attribute when multiplue=true" do
     teams = q.get_all('teams')
     members = q.get_all('members')
     teams.each {|team| team['members'].should == nil }
-    q.solve_has_many(teams, 'members', 'team_id', 'members') { q.order_by(:id) }
+    q.bind_referenced_from(teams, 'members', 'team_id', 'members') { q.order_by(:id) }
     teams.each do |team|
       team['members'].should be_a_kind_of(Array)
       if team['name'] == 'sos'
@@ -482,11 +489,11 @@ describe 'Kwery::QweryHelper#solve_has_many' do
     end
   end
 
-  it "sets empty array when reference data is not found." do
+  it "sets empty array when reference data is not found when multiplue=true" do
     teams = q.get_all('teams')
     members = q.get_all('members')
     members.each {|member| member['owns'].should == nil }
-    q.solve_has_many(members, 'owns', 'owner_id', 'teams')
+    q.bind_referenced_from(members, 'teams', 'owner_id', 'owns')
     members.each do |member|
       if member['name'] == 'Haruhi'
         member['owns'].should be_a_kind_of(Array)
@@ -497,11 +504,11 @@ describe 'Kwery::QweryHelper#solve_has_many' do
     end
   end
 
-  it "can take model objects and Model class" do
+  it "can take model objects and Model class when multiplue=true" do
     teams = q.get_all(Team)
     members = q.get_all(Member)
     teams.each {|team| team[:members].should == nil }
-    q.solve_has_many(teams, :members, :team_id, Member) { q.order_by(:id) }
+    q.bind_referenced_from(teams, Member, :team_id, :members) { q.order_by(:id) }
     teams.each do |team|
       team[:members].should be_a_kind_of(Array)
       if team.name == 'sos'
