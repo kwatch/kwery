@@ -296,22 +296,14 @@ module Kwery
       @auto_free = true
     end
 
-    def get(table, id=nil)
+    def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
       builder = QueryBuilder.new(to_table_name(table))
-      builder.where(:id, id) if id
-      yield(builder) if block_given?
-      return _get(table, builder)
-    end
-
-    ## (experimental)
-    def get!(table, key, val=UNDEFINED)
-      buidler = QueryBuilder.new(to_table_name(table))
-      buidler.where(key, val)
-      yield(builder) if block_given?
-      return _get(table, builder)
-    end
-
-    def _get(table, builder)  # :nodoc:
+      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
+      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
+      else                         ; builder.where(arg1, arg2)
+      end
+      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      #yield(builder) if block_given?
       sql = builder.build_select_sql('*')
       result = execute(sql)
       #builder.clear()
@@ -343,22 +335,14 @@ module Kwery
     end
     protected :_collect_models
 
-    def get_all(table, key=UNDEFINED, val=UNDEFINED)
+    def get_all(table, arg1=UNDEFINED, arg2=UNDEFINED)
       builder = QueryBuilder.new(to_table_name(table))
-      builder.where(key, val) unless key.equal?(UNDEFINED)
+      #if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
+      #elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
+      #else                         ; builder.where(arg1, arg2)
+      #end
+      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(builder) if block_given?
-      return _get_all(table, builder)
-    end
-
-    ## (experimental)
-    def get_all!(table, key, val=UNDEFINED)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(key, val)
-      yield(builder) if block_given?
-      return _get_all(table, builder)
-    end
-
-    def _get_all(table, builder)  # :nodoc:
       sql = builder.build_select_sql('*')
       result = execute(sql)
       #builder.clear()
@@ -424,24 +408,16 @@ module Kwery
       return @conn.insert_id
     end
 
-    def update(table, values=nil, id=nil)
+    def update(table, values=nil, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
       builder = QueryBuilder.new(to_table_name(table))
-      builder.where(:id, id) if id
-      yield(builder) if block_given?
-      return _update(table, builder, values)
-    end
-
-    ## (experimental)
-    def update!(table, values, key, val=UNDEFINED)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(key, val)
-      yield(builder) if block_given?
-      return _update(table, builder, values)
-    end
-
-    def _update(table, builder, values)  # :nodoc:
+      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
+      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
+      else                         ; builder.where(arg1, arg2)
+      end
+      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      #yield(builder) if block_given?
       unless builder._where
         raise ArgumentError.new("update condition is reqiured.")
       end
@@ -450,7 +426,6 @@ module Kwery
       return execute(sql)
     end
 
-
     def update_all(table, values)
       builder = QueryBuilder.new(to_table_name(table))
       sql = builder.build_update_sql(values)
@@ -458,22 +433,15 @@ module Kwery
       return execute(sql)
     end
 
-    def delete(table, id=nil)
+    def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__delete__(self) if table.is_a?(Model)
       builder = QueryBuilder.new(to_table_name(table))
-      builder.where(:id, id) if id
-      yield(builder) if block_given?
-      return _delete(table, builder)
-    end
-
-    ## (experimental)
-    def delete!(table, key, val=UNDEFINED)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(key, val)
-      return _delete(table)
-    end
-
-    def _delete(table, builder)  # :nodoc:
+      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
+      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
+      else                         ; builder.where(arg1, arg2)
+      end
+      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      #yield(builder) if block_given?
       unless builder._where
         raise ArgumentError.new("delete condition is reqiured.")
       end
