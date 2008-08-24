@@ -5,7 +5,7 @@
 ### $License$
 ###
 
-module Enumerable
+module ::Enumerable
 
   def index_by(key=nil)
     hash = {}
@@ -37,6 +37,17 @@ module Enumerable
 
   def collect_by_key(key)
     return self.collect {|item| item[key]}
+  end
+
+end
+
+
+class ::Hash
+
+  def slice(*keys)
+    hash = {}
+    keys.each {|key| hash[key] = self[key] }
+    return hash
   end
 
 end
