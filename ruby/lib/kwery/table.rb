@@ -183,6 +183,11 @@ module Kwery
       _build_column(name, :datetime, nil, nil, &block)
     end
 
+    def references(name, table, column_name=:id, &block)
+      column = _build_column(name, :integer, nil, nil, &block)
+      column.references(table, column_name)
+    end
+
     def _build_column(name, type, width, width2, &block)  # :nodoc:
       column = Column.new(name, type, width, width2)
       block.call(column) if block

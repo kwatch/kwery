@@ -31,6 +31,7 @@ class Team
     t.string(:name) {|c| c.not_null.unique }
     t.text(:desc)
     t.integer(:owner_id) {|c| c.references('members') }
+    t.references(:parent_id, 'teams')
     t.timestamp(:created_at) {|c| c.not_null.default(:current_timestamp) }
     t.timestamp(:updated_at) {|c| c.not_null }
     t.boolean(:deleted) {|c| c.not_null.default(false) }
@@ -59,12 +60,12 @@ describe 'Kwery::Model.create_table' do
   q.execute("drop table if exists #{Team.__table__}")
   q.execute("drop table if exists #{Member.__table__}")
 
-  col_names1 = [:id, :name, :desc, :owner_id, :created_at, :updated_at, :deleted]
+  col_names1 = [:id, :name, :desc, :owner_id, :parent_id, :created_at, :updated_at, :deleted]
   col_names2 = [:id, :name, :desc, :team_id, :birth, :created_at, :updated_at, :deleted]
 
   it "sets @__columns___ to list of Columns." do
     Team.__columns__.should be_a_kind_of(Array)
-    Team.__columns__.length.should == 7
+    Team.__columns__.length.should == 8
     Team.__columns__.each {|x| x.should be_a_kind_of(Kwery::Column) }
     Team.__columns__.collect {|x| x._name }.should == col_names1
     Member.__columns__.should be_a_kind_of(Array)
@@ -97,6 +98,7 @@ create table teams (
   name               varchar(255)    not null unique,
   `desc`             text           ,
   owner_id           integer         references members(id),
+  parent_id          integer         references teams(id),
   created_at         timestamp       not null default current_timestamp,
   updated_at         timestamp       not null default 0,
   deleted            boolean         not null default false
@@ -160,7 +162,7 @@ sos = ryouou = nil
 describe "Kwery::Model#__insert__" do
 
   it "sets insert id automatically." do
-    sos = Team.new(nil, 'sos', 'SOS Brigate', nil, nil, nil, false)
+    sos = Team.new(nil, 'sos', 'SOS Brigate', nil, nil, nil, nil, false)
     q.insert(sos)
     sos.id.should == 1
     ryouou = Team.new(:name=>'ryouou', :deleted=>false)
@@ -201,7 +203,7 @@ describe "Kwery::Model#__update__" do
     ryouou.desc = desc
     q.output = ''
     q.update(ryouou)
-    q.output.should == "update teams set updated_at=current_timestamp, `desc`='Ryouou Hight School' where id = 2\n"
+    q.output.should == "update teams set `desc`='Ryouou Hight School', updated_at=current_timestamp where id = 2\n"
     q.output = nil
     q.get(Team, ryouou.id).desc.should == desc
   end
