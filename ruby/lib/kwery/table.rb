@@ -106,7 +106,7 @@ module Kwery
     def initialize(query=nil)
       @query = query || Query.new(nil)
     end
-    attr_accessor :query, :table_name, :options, :columns
+    attr_accessor :query, :table_name, :options, :columns, :unique_keys_list
 
     def create_table(table_name, options={})
       @table_name = table_name
@@ -119,7 +119,16 @@ module Kwery
 
     def to_sql
       s =  "create table #{quote_keyword(to_table_name(@table_name))} (\n  "
-      s << @columns.collect {|column| column.to_sql() }.join(",\n  ") << "\n)"
+      sep = ''
+      @columns.each do |column|
+        s << sep << column.to_sql
+        sep = ",\n  "
+      end if @columns
+      @unique_keys_list.each do |column_names|
+        column_names = column_names.collect {|col| quote_keyword(col) }
+        s << sep << "unique(#{column_names.join(', ')})"
+      end if @unique_keys_list
+      s << "\n)"
       return s
     end
 
@@ -179,6 +188,10 @@ module Kwery
       block.call(column) if block
       @columns << column
       return column
+    end
+
+    def unique(*column_names)
+      (@unique_keys_list ||= []) << column_names
     end
 
   end

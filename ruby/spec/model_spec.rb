@@ -120,6 +120,32 @@ END
     sql.should == expected.chomp
   end
 
+  it "builds unique constrants which has several column names." do
+    class Taggings
+      include Kwery::Model
+      create_table('taggings') do |t|
+        t.integer(:id) {|c| c.primary_key.serial }
+        t.integer(:post_id) {|c| c.not_null.references('posts') }
+        t.integer(:tag_id) {|c| c.not_null.references('tags') }
+        t.integer(:category_id) {|c| c.not_null.references('categories') }
+        t.unique(:tag_id, :post_id)  # !!!
+        t.unique(:category_id, :post_id)  # !!!
+      end
+    end
+    expected = <<END
+create table taggings (
+  id                 integer         primary key auto_increment,
+  post_id            integer         not null references posts(id),
+  tag_id             integer         not null references tags(id),
+  category_id        integer         not null references categories(id),
+  unique(tag_id, post_id),
+  unique(category_id, post_id)
+)
+END
+    expected.chomp!
+    Taggings.to_sql.should == expected
+  end
+
 end
 
 
