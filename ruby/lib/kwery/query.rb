@@ -452,19 +452,17 @@ module Kwery
       raise NotImplementedError.new("#{self.class.name}#execute(): not implemented yet.")
     end
 
-#--
-#    def insert_object(obj)
-#      obj.__insert__(self)
-#    end
-#
-#    def update_object(obj)
-#      obj.__update__(self)
-#    end
-#
-#    def delete_object(obj)
-#      obj.__delete__(self)
-#    end
-#++
+    def insert_model(obj)
+      obj.__insert__(self)
+    end
+
+    def update_model(obj)
+      obj.__update__(self)
+    end
+
+    def delete_model(obj)
+      obj.__delete__(self)
+    end
 
     def transaction
       return start_transaction() unless block_given?
