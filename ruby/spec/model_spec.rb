@@ -47,6 +47,7 @@ class Member
     t.text(:desc)
     t.integer(:team_id) {|c| c.not_null.references('teams') }
     t.date(:birth)
+    t.char(:gender, 1)
     t.timestamp(:created_at) {|c| }
     t.timestamp(:updated_at) {|c| c.not_null.default(:current_timestamp) }
     t.boolean(:deleted) {|c| c.not_null.default(false) }
@@ -61,7 +62,7 @@ describe 'Kwery::Model.create_table' do
   q.execute("drop table if exists #{Member.__table__}")
 
   col_names1 = [:id, :name, :desc, :owner_id, :parent_id, :created_at, :updated_at, :deleted]
-  col_names2 = [:id, :name, :desc, :team_id, :birth, :created_at, :updated_at, :deleted]
+  col_names2 = [:id, :name, :desc, :team_id, :birth, :gender, :created_at, :updated_at, :deleted]
 
   it "sets @__columns___ to list of Columns." do
     Team.__columns__.should be_a_kind_of(Array)
@@ -69,7 +70,7 @@ describe 'Kwery::Model.create_table' do
     Team.__columns__.each {|x| x.should be_a_kind_of(Kwery::Column) }
     Team.__columns__.collect {|x| x._name }.should == col_names1
     Member.__columns__.should be_a_kind_of(Array)
-    Member.__columns__.length.should == 8
+    Member.__columns__.length.should == 9
     Member.__columns__.each {|x| x.should be_a_kind_of(Kwery::Column) }
     Member.__columns__.collect {|x| x._name }.should == col_names2
   end
@@ -114,6 +115,7 @@ create table members (
   `desc`             text           ,
   team_id            integer         not null references teams(id),
   birth              date           ,
+  gender             char(1)        ,
   created_at         timestamp       null default null,
   updated_at         timestamp       not null default current_timestamp,
   deleted            boolean         not null default false
@@ -127,10 +129,10 @@ END
       include Kwery::Model
       create_table('taggings') do |t|
         t.integer(:id) {|c| c.primary_key.serial }
-        t.integer(:post_id) {|c| c.not_null.references('posts') }
-        t.integer(:tag_id) {|c| c.not_null.references('tags') }
-        t.integer(:category_id) {|c| c.not_null.references('categories') }
-        t.unique(:tag_id, :post_id)  # !!!
+        t.references(:post_id, 'posts') {|c| c.not_null }
+        t.references(:tag_id, 'tags') {|c| c.not_null }
+        t.references(:category_id, 'categories') {|c| c.not_null }
+        t.unique(:tag_id, :post_id)       # !!!
         t.unique(:category_id, :post_id)  # !!!
       end
     end

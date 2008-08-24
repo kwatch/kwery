@@ -151,6 +151,10 @@ module Kwery
       _build_column(name, :varchar, width || 255, nil, &block)
     end
 
+    def char(name, width, &block)
+      _build_column(name, :char, width, nil, &block)
+    end
+
     def text(name, &block)
       _build_column(name, :text, nil, nil, &block)
     end
@@ -183,9 +187,10 @@ module Kwery
       _build_column(name, :datetime, nil, nil, &block)
     end
 
-    def references(name, table, column_name=:id, &block)
+    def references(name, table, colname=:id, &block)
       column = _build_column(name, :integer, nil, nil, &block)
-      column.references(table, column_name)
+      #column.not_null()   # should be enabled?
+      column.references(table, colname)
     end
 
     def _build_column(name, type, width, width2, &block)  # :nodoc:
