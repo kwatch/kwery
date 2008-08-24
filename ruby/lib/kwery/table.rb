@@ -108,19 +108,13 @@ module Kwery
     end
     attr_accessor :query, :table_name, :options, :columns
 
-    def create_table(table_name, options={}, &block)
+    def create_table(table_name, options={})
       @table_name = table_name
       @options = options
-      define_columns(&block) if block
-      return to_sql()
-    end
-
-    def define_columns(&block)
       @columns = []
       before()
-      block.call(self)
+      yield(self) if block_given?
       after()
-      return @columns
     end
 
     def to_sql
