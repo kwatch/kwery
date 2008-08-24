@@ -79,19 +79,14 @@ module Kwery
           self.set_table_name(table_name)
           @__options__ = options
           builder = TableBuilder.new(Query.new(nil))
-          @__columns__ = builder.define_columns(&block)
-          #@__column_names__ = @__columns__.collect {|c| c._name }
-          #attr_accessor *@__column_names__
+          builder.create_table(table_name, options, &block)
+          @__columns__ = builder.columns
           self.add_columns(*@__columns__.collect {|c| c._name })
+          @__builder__ = builder
         end
         def self.to_sql(query=nil)
-          require 'kwery/table'
-          query ||= Query.new(nil)
-          builder = TableBuilder.new(nil)
-          builder.table_name = @__table__
-          builder.columns = @__columns__
-          #return builder.create_table(@__table__, @__options__)
-          return builder.to_sql()
+          return nil unless @__builder__
+          return @__builder__.to_sql
         end
       end
       return self
