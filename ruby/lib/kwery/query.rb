@@ -62,18 +62,14 @@ module Kwery
       @_table = @_where = @_order_by = @_group_by = @_having = @_limit = @_join = nil
     end
 
-    def build_select_sql(arg, id=nil)
-      if id
-        sql = "select #{arg || '*'} from #{@_table} where id = #{quote_value(id)}"
-      else
-        sql = "select #{arg || '*'} from #{@_table}"
-        sql << @_join if @_join
-        sql << ' where '    << @_where    if @_where
-        sql << ' group by ' << @_group_by if @_group_by
-        sql << ' having '   << @_having   if @_having
-        sql << ' order by ' << @_order_by if @_order_by
-        sql << " limit #{@_limit[0]}, #{@_limit[1]}" if @_limit
-      end
+    def build_select_sql(columns='*')
+      sql = "select #{columns || '*'} from #{@_table}"
+      sql << @_join if @_join
+      sql << ' where '    << @_where    if @_where
+      sql << ' group by ' << @_group_by if @_group_by
+      sql << ' having '   << @_having   if @_having
+      sql << ' order by ' << @_order_by if @_order_by
+      sql << " limit #{@_limit[0]}, #{@_limit[1]}" if @_limit
       return sql
     end
 
@@ -95,25 +91,21 @@ module Kwery
       return sql
     end
 
-    def build_update_sql(values, id=nil)
-      if values.is_a?(Array)
+    def build_update_sql(values)
+      if values.is_a?(Hash)
         s = values.collect {|k, v| "#{quote_keyword(k)}=#{quote_value(v)}" }.join(', ')
         sql = "update #{@_table} set #{s}"
-      elsif values.is_a?(Hash)
+      elsif values.is_a?(Array)
         s = values.collect {|k, v| "#{quote_keyword(k)}=#{quote_value(v)}" }.join(', ')
         sql = "update #{@_table} set #{s}"
       end
-      if    !id.nil? ; sql << " where id = #{quote_value(id)}"
-      elsif @_where  ; sql << ' where ' << @_where
-      end
+      sql << ' where ' << @_where if @_where
       return sql
     end
 
-    def build_delete_sql(id=nil)
+    def build_delete_sql()
       sql = "delete from #{@_table}"
-      if    !id.nil? ; sql << " where id = #{quote_value(id)}"
-      elsif @_where  ; sql << ' where ' << @_where
-      end
+      sql << ' where ' << @_where if @_where
       return sql
     end
 
