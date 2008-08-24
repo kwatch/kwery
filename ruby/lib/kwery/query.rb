@@ -18,7 +18,8 @@ module Kwery
       elsif table.is_a?(Model)  ;  raise ArgumentError.new("Model not allowed.")
       else                      ;  raise ArgumentError.new("invalid table object.")
       end
-      return @table_prefix ? @table_prefix + t : t
+      #return @table_prefix ? @table_prefix + t : t
+      return t
     end
 
     def escape_string(val)

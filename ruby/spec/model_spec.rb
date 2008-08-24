@@ -181,15 +181,15 @@ describe "Kwery::Model#__insert__" do
   end
 
   it "raises error when selected model object." do
-    obj = q.get(Team, sos.id)
+    obj = q.get(Team, :id, sos.id)
     proc { q.insert(obj) }.should raise_error(RuntimeError, 'Already inserted.')
   end
 
   it "sets created_at and updated_at column automatically." do
-    sos = q.get(Team, sos.id)
+    sos = q.get(Team, :id, sos.id)
     sos.created_at.should be_a_kind_of(Kwery::TIMESTAMP_CLASS)
     sos.updated_at.should be_a_kind_of(Kwery::TIMESTAMP_CLASS)
-    ryouou = q.get(Team, ryouou.id)
+    ryouou = q.get(Team, :id, ryouou.id)
     ryouou.created_at.should be_a_kind_of(Kwery::TIMESTAMP_CLASS)
     ryouou.updated_at.should be_a_kind_of(Kwery::TIMESTAMP_CLASS)
   end
@@ -207,7 +207,7 @@ describe "Kwery::Model#__update__" do
     q.update(ryouou)
     q.output.should == "update teams set `desc`='Ryouou Hight School', updated_at=current_timestamp where id = 2\n"
     q.output = nil
-    q.get(Team, ryouou.id).desc.should == desc
+    q.get(Team, :id, ryouou.id).desc.should == desc
   end
 
   it "raises error when non-inserted object" do
@@ -224,7 +224,7 @@ describe "Kwery::Model#__update__" do
     sleep(1)
     haruhi.desc = 'Haruhi Suzumiya'
     q.update(haruhi)
-    haruhi = q.get(Member, haruhi.id)
+    haruhi = q.get(Member, :id, haruhi.id)
     haruhi.created_at.should == created_at
     haruhi.updated_at.should_not == updated_at
     #haruhi.updated_at.should be_larger_than(updated_at)

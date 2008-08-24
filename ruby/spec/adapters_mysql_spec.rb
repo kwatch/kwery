@@ -52,7 +52,7 @@ END
   end
 
   it "returns non-string data when 'select' statement" do
-    hash = q.get('dummy1', 1)
+    hash = q.get('dummy1', :id, 1)
     hash['id'].should be_a_kind_of(Integer)
     hash['name'].should be_a_kind_of(String)
     hash['desc'].should be_a_kind_of(String)
