@@ -36,7 +36,17 @@ module ::Enumerable
   end
 
   def collect_by_key(key)
-    return self.collect {|item| item[key]}
+    return self.collect {|item| item[key] }
+  end
+
+  def apply(*args)
+    return self.collect {|item| item.__send__(*args) }
+  end
+
+  def to_hash
+    hash = {}
+    self.each {|key, val| hash[key] = val }
+    return hash
   end
 
 end
