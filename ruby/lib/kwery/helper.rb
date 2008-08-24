@@ -35,10 +35,6 @@ module ::Enumerable
     return hash
   end
 
-  def collect_by_key(key)
-    return self.collect {|item| item[key] }
-  end
-
   def apply(*args)
     return self.collect {|item| item.__send__(*args) }
   end
