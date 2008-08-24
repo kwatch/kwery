@@ -222,7 +222,7 @@ module Kwery
         end
         return key.collect {|key, val| "#{key} = #{quote_value(val)}" }.join(' and ')
       else
-        raise ArgumentError.new('invalid where-clause.')
+        raise ArgumentError.new("invalid where-clause. (key=#{key.inspect})")
       end
     end
     protected :_factor
@@ -302,12 +302,8 @@ module Kwery
 
     def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
       builder = QueryBuilder.new(to_table_name(table))
-      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
-      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
-      else                         ; builder.where(arg1, arg2)
-      end
-      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      #yield(builder) if block_given?
+      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(builder) if block_given?
       sql = builder.build_select_sql('*')
       result = execute(sql)
       #builder.clear()
@@ -341,10 +337,6 @@ module Kwery
 
     def get_all(table, arg1=UNDEFINED, arg2=UNDEFINED)
       builder = QueryBuilder.new(to_table_name(table))
-      #if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
-      #elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
-      #else                         ; builder.where(arg1, arg2)
-      #end
       builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(builder) if block_given?
       sql = builder.build_select_sql('*')
@@ -416,12 +408,8 @@ module Kwery
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
       builder = QueryBuilder.new(to_table_name(table))
-      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
-      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
-      else                         ; builder.where(arg1, arg2)
-      end
-      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      #yield(builder) if block_given?
+      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(builder) if block_given?
       unless builder._where
         raise ArgumentError.new("update condition is reqiured.")
       end
@@ -440,12 +428,8 @@ module Kwery
     def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__delete__(self) if table.is_a?(Model)
       builder = QueryBuilder.new(to_table_name(table))
-      if    arg1.equal?(UNDEFINED) ; yield(builder) if block_given?
-      elsif arg2.equal?(UNDEFINED) ; builder.where(:id, arg1)
-      else                         ; builder.where(arg1, arg2)
-      end
-      #builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      #yield(builder) if block_given?
+      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(builder) if block_given?
       unless builder._where
         raise ArgumentError.new("delete condition is reqiured.")
       end

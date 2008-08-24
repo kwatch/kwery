@@ -155,14 +155,14 @@ module Kwery
           values[name] = val
         end
         __before_update__(values)
-        query.update(self.class.__table__, values, self.id)
+        query.update(self.class.__table__, values, :id, self.id)
         __updated__(query)
       end
     end
 
     def __delete__(query)
       raise "Not inserted object." if @__old__.nil?
-      query.delete(self.class.__table__, self.id)
+      query.delete(self.class.__table__, :id, self.id)
       __deleted__(query)
     end
 

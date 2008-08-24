@@ -108,9 +108,9 @@ describe 'Kwery::QueryExecutor#insert' do
 
   it "can talke model object" do
     tsukasa = Member.new(nil, 'Tsukasa', nil, ryouou_id, Time.now, ':now()')
-    q.insert_object(tsukasa)
+    q.insert(tsukasa)
     miyuki = Member.new(:name=>'Miyuki', :team_id=>ryouou_id)
-    q.insert_object(miyuki)
+    q.insert(miyuki)
     q.select('members').length.should == 7
   end
 
@@ -122,7 +122,7 @@ describe 'Kwery::QueryExecutor#update' do
   it "updates data with conditions" do
     desc = "Haruhi's brigate"  # contains "'"
     q.update('teams', {:desc=>desc, :updated_at=>Time.now}) {|c| c.where('name = ', 'sos') }
-    hash = q.get('teams', 1)
+    hash = q.get('teams', :id, 1)
     hash['desc'].should == desc
   end
 
@@ -130,8 +130,8 @@ describe 'Kwery::QueryExecutor#update' do
     mikuru = q.get('members') {|c| c.where(:name, 'Mikuru') }
     mikuru['desc'].should == nil
     desc = 'Future-woman'
-    q.update('members', {:desc=>desc, :updated_at=>now}, mikuru['id'])
-    mikuru = q.get('members', mikuru['id'].to_i)
+    q.update('members', {:desc=>desc, :updated_at=>now}, :id, mikuru['id'])
+    mikuru = q.get('members', :id, mikuru['id'].to_i)
     mikuru['desc'].should == desc
   end
 
@@ -144,8 +144,8 @@ describe 'Kwery::QueryExecutor#update' do
     miyuki = q.get(Member) {|c| c.where('name', 'Miyuki') }
     miyuki.desc.should == nil
     miyuki.desc = 'Miyukichi'
-    q.update(Member, {:desc=>miyuki.desc}, miyuki.id)
-    q.get('members', miyuki.id)['desc'].should == miyuki.desc
+    q.update(Member, {:desc=>miyuki.desc}, :id, miyuki.id)
+    q.get('members', :id, miyuki.id)['desc'].should == miyuki.desc
   end
 
   it "can take model object" do
@@ -153,7 +153,7 @@ describe 'Kwery::QueryExecutor#update' do
     tsukasa.desc.should == nil
     tsukasa.desc = 'Barusamikosu'
     q.update(tsukasa)
-    q.get('members', tsukasa.id)['desc'].should == tsukasa.desc
+    q.get('members', :id, tsukasa.id)['desc'].should == tsukasa.desc
   end
 
 end
@@ -162,7 +162,7 @@ end
 describe 'Kwery::QueryExecutor#get' do
 
   it "returns a Hash object" do
-    hash = q.get('members', 1)
+    hash = q.get('members', :id, 1)
     hash.should be_kind_of(Hash)
     hash['id'].to_i.should == 1
     hash['name'].should == 'Haruhi'
@@ -176,19 +176,19 @@ describe 'Kwery::QueryExecutor#get' do
   end
 
   it "returns nil when data not found" do
-    hash = q.get('members', 999)
+    hash = q.get('members', :id, 999)
     hash.should == nil
     hash = q.get('members') {|c| c.where(:name, 'Minoru') }
     hash.should == nil
     #
-    obj = q.get(Member, 999)
+    obj = q.get(Member, :id, 999)
     obj.should == nil
     obj = q.get(Member) {|c| c.where(:name, 'Minoru') }
     obj.should == nil
   end
 
   it "can take Model class" do
-    sos = q.get(Team, 1)
+    sos = q.get(Team, :id, 1)
     sos.should be_a_kind_of(Team)
     sos.name.should == 'sos'
     #
@@ -391,7 +391,7 @@ describe 'Kwery::QueryHelper#bind_references_to' do
     end
     q.bind_references_to(members, 'teams', 'team_id', 'team')
     members.each do |member|
-      member['team'].should == q.get('teams', member['team_id'])
+      member['team'].should == q.get('teams', :id, member['team_id'])
     end
   end
 
@@ -410,7 +410,7 @@ describe 'Kwery::QueryHelper#bind_references_to' do
       team['owner'].should == nil
     end
     q.bind_references_to(teams, 'members', 'owner_id', 'owner', false)
-    teams.find {|team| team['name'] == 'sos' }['owner'].should == q.get('members', 1)
+    teams.find {|team| team['name'] == 'sos' }['owner'].should == q.get('members', :id, 1)
     teams.find {|team| team['name'] == 'ryouou' }['owner'].should == nil
   end
 
@@ -424,8 +424,8 @@ describe 'Kwery::QueryHelper#bind_references_to' do
     end
     q.bind_references_to(members, Team, :team_id, :team)
     members.each do |member|
-      member.team.id.should == q.get(Team, member.team_id).id
-      member.team.name.should == q.get(Team, member.team_id).name
+      member.team.id.should == q.get(Team, :id, member.team_id).id
+      member.team.name.should == q.get(Team, :id, member.team_id).name
     end
   end
 
@@ -529,9 +529,9 @@ describe 'Kwery::QueryExecutor#transaction' do
     id = kagami['id']
     s = 'Hiiragi Kagami'
     q.transaction do
-      q.update('members', {:desc=>s}, id)
+      q.update('members', {:desc=>s}, :id, id)
     end
-    q.get('members', id)['desc'].should == s
+    q.get('members', :id, id)['desc'].should == s
   end
 
   it "rollbacks when error raised" do
@@ -541,14 +541,14 @@ describe 'Kwery::QueryExecutor#transaction' do
     proc {
       q.transaction do
         proc {
-          q.update('members', {:desc=>s}, id)
-          q.get('members', id)['desc'].should == s
+          q.update('members', {:desc=>s}, :id, id)
+          q.get('members', :id, id)['desc'].should == s
         }.should_not raise_error(Exception)
-        q.update('members', {:description=>s}, id)  # error
+        q.update('members', {:description=>s}, :id, id)  # error
       end
     }.should raise_error(Kwery::SQL_ERROR_CLASS)  # Unknown column 'description' in 'field list'
-    q.get('members', id)['desc'].should_not == s
-    q.get('members', id)['desc'].should == tsukasa['desc']
+    q.get('members', :id, id)['desc'].should_not == s
+    q.get('members', :id, id)['desc'].should == tsukasa['desc']
   end
 
 end
@@ -558,7 +558,7 @@ describe 'Kwery::QueryExecutor#delete' do
 
   it "deletes data specified by id" do
     miyuki = q.get('members') {|c| c.where('name', 'Miyuki') }
-    q.delete('members', miyuki['id'])
+    q.delete('members', :id, miyuki['id'])
     q.get('members') {|c| c.where('name', 'Miyuki') }.should == nil
     q.get_all('members').length.should == 6
   end
