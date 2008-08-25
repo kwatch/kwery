@@ -176,7 +176,7 @@ module Kwery
       raise Kwery::Error.new("Already inserted.") if @__old__
       values = self.to_hash
       __before_insert__(values)
-      query.insert(self.class.__table__, self.to_hash)
+      query.insert(self.class.__table__, values)
       __inserted__(query)
     end
 
