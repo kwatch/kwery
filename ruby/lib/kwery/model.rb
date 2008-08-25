@@ -61,25 +61,25 @@ module Kwery
           has_updated_at = column_names.include?(:updated_at)
           buf = ''
           if has_created_at && has_updated_at
-            buf << <<-END
+            self.class_eval do
                 def __before_insert__(values)
                   values[:created_at] = @created_at = __current_timestamp__()
                   values[:updated_at] = @updated_at = __current_timestamp__()
                 end
-            END
+            end
           elsif has_created_at
-            buf << <<-END
+            self.class_eval do
                 def __before_insert__(values)
                   values[:created_at] = @created_at = __current_timestamp__()
                 end
-            END
+            end
           end
           if has_updated_at
-            buf << <<-END
+            self.class_eval do
                 def __before_update__(values)
                   values[:updated_at] = @updated_at = __current_timestamp__()
                 end
-            END
+            end
           end
           self.class_eval(buf)
         end
