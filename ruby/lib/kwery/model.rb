@@ -153,19 +153,28 @@ module Kwery
       return self.class.__column_names__.collect {|name| instance_variable_get("@#{name}") }
     end
 
+    def changed_values
+      values = {}
+      @__old__.each do |name, old_val|
+        val = self.instance_variable_get("@#{name}")
+        values[name] = val
+      end if @__old__
+      return values
+    end
+
     def __selected__(query)
       @__old__ = {}
     end
 
     def __inserted__(query)
       @id = query.last_insert_id
-      #arr = query.select_only(self.class.__table__, 'created_at') {|c| c.where(:id, @id) }
+      #arr = query.select_only(self.class.__table__, 'created_at', :id, @id) }
       #@created_at = @updated_at = arr.first
       @__old__ = {}
     end
 
     def __updated__(query)
-      #arr = query.select_only(self.class.__table__, 'updated_at') {|c| c.where(:id, @id) }
+      #arr = query.select_only(self.class.__table__, 'updated_at', :id, @id) }
       #@updated_at = arr.first
       @__old__.clear()
     end
@@ -185,11 +194,7 @@ module Kwery
     def __update__(query)
       raise Kwery::Error.new("Not inserted object.") if @__old__.nil?
       if !@__old__.empty?
-        values = {}
-        @__old__.each do |name, old_val|
-          val = self.instance_variable_get("@#{name}")
-          values[name] = val
-        end
+        values = changed_values()
         __before_update__(values)
         query.update(self.class.__table__, values, :id, self.id)
         __updated__(query)
