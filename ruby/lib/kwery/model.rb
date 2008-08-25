@@ -43,9 +43,7 @@ module Kwery
         def self.set_table_name(table_name)
           @__table__ = table_name
         end
-        def self.add_columns(*column_names)
-          list = column_names.collect {|col| col.to_sym }
-          @__column_names__ ? (@__column_names__ = list) : @__column_names__.concat(list)
+        def self._define_accessors(column_names)  # :nodoc:
           attr_accessor *column_names
           buf = ''
           column_names.each do |col|
@@ -56,8 +54,12 @@ module Kwery
               end
             END
           end
-          has_created_at = @__column_names__.include?(:created_at)
-          has_updated_at = @__column_names__.include?(:updated_at)
+          self.class_eval(buf)
+        end
+        def self._define_hooks(column_names)  # :nodoc:
+          has_created_at = column_names.include?(:created_at)
+          has_updated_at = column_names.include?(:updated_at)
+          buf = ''
           if has_created_at && has_updated_at
             buf << <<-END
                 def __before_insert__(values)
@@ -80,6 +82,12 @@ module Kwery
             END
           end
           self.class_eval(buf)
+        end
+        def self.add_columns(*column_names)
+          list = column_names.collect {|col| col.to_sym }
+          @__column_names__ ? (@__column_names__ = list) : @__column_names__.concat(list)
+          self._define_accessors(column_names)
+          self._define_hooks(@__column_names__)
         end
         def self.create_table(table_name, options={}, &block)
           require 'kwery/table'
