@@ -40,7 +40,7 @@ module Kwery
       self.class_eval(buf)
     end
 
-    def _support_created_and_updated_at(column_names)  # :nodoc:
+    def _support_autoupdate_timestamps(column_names)  # :nodoc:
       column_names = @__column_names__
       has_created_at = column_names.include?(:created_at)
       has_updated_at = column_names.include?(:updated_at)
@@ -72,7 +72,7 @@ module Kwery
       @__column_names__.concat(list)
       attr_accessor *column_names
       self._support_update_only_changed(column_names) if self.support?(:update_only_changed)
-      self._support_created_and_updated_at(column_names) if self.support?(:created_and_updated_at)
+      self._support_autoupdate_timestamps(column_names) if self.support?(:autoupdate_timestamps)
     end
 
     def create_table(table_name, options={}, &block)
@@ -104,7 +104,7 @@ module Kwery
         @__table__ = arr.join('_')  # default table name (ex. BlogPost => 'blog_post')
         @__column_names__ = []
         @__columns__ = []
-        @__support__ = {:update_only_changed=>true, :created_and_updated_at=>true}
+        @__support__ = {:update_only_changed=>true, :autoupdate_timestamps=>true}
       end
       return self
     end
