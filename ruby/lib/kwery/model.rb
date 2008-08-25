@@ -19,6 +19,14 @@ module Kwery
       @__table__ = table_name
     end
 
+    def support(hash={})
+      @__support__.update(hash)
+    end
+
+    def support?(name)
+      return @__support__[name]
+    end
+
     def _support_update_only_changed(column_names)   # :nodoc:
       buf = ''
       column_names.each do |col|
@@ -63,8 +71,8 @@ module Kwery
       list = column_names.collect {|col| col.to_sym }
       @__column_names__.concat(list)
       attr_accessor *column_names
-      self._support_update_only_changed(column_names)
-      self._support_created_and_updated_at(column_names)
+      self._support_update_only_changed(column_names) if self.support?(:update_only_changed)
+      self._support_created_and_updated_at(column_names) if self.support?(:created_and_updated_at)
     end
 
     def create_table(table_name, options={}, &block)
@@ -96,6 +104,7 @@ module Kwery
         @__table__ = arr.join('_')  # default table name (ex. BlogPost => 'blog_post')
         @__column_names__ = []
         @__columns__ = []
+        @__support__ = {:update_only_changed=>true, :created_and_updated_at=>true}
       end
       return self
     end
