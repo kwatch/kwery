@@ -20,6 +20,14 @@ module Kwery
       instance_variable_set("@#{name}", value)
     end
 
+    def __before_insert__(values)
+      ## empty
+    end
+
+    def __before_update__(values)
+      ## empty
+    end
+
     def self.included(klass)
       klass.class_eval do
         arr = []
@@ -34,12 +42,6 @@ module Kwery
         end
         def self.set_table_name(table_name)
           @__table__ = table_name
-        end
-        def __before_insert__(values)
-          ## empty
-        end
-        def __before_update__(values)
-          ## empty
         end
         def self.add_columns(*column_names)
           list = column_names.collect {|col| col.to_sym }
