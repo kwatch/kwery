@@ -201,9 +201,3 @@ module Kwery
 
 
 end
-
-
-def require_model(model_name, file_name=nil)
-  file_name ||= model_name.to_s
-  autoload(model_name, file_name)
-end
