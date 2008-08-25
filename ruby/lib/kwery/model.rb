@@ -19,8 +19,7 @@ module Kwery
       @__table__ = table_name
     end
 
-    def _define_accessors(column_names)   # :nodoc:
-      attr_accessor *column_names
+    def _support_update_only_changed(column_names)   # :nodoc:
       buf = ''
       column_names.each do |col|
         buf << <<-END
@@ -33,7 +32,8 @@ module Kwery
       self.class_eval(buf)
     end
 
-    def _define_hooks(column_names)  # :nodoc:
+    def _support_created_and_updated_at(column_names)  # :nodoc:
+      column_names = @__column_names__
       has_created_at = column_names.include?(:created_at)
       has_updated_at = column_names.include?(:updated_at)
       if has_created_at && has_updated_at
@@ -62,8 +62,9 @@ module Kwery
     def add_columns(*column_names)
       list = column_names.collect {|col| col.to_sym }
       @__column_names__.concat(list)
-      self._define_accessors(column_names)
-      self._define_hooks(@__column_names__)
+      attr_accessor *column_names
+      self._support_update_only_changed(column_names)
+      self._support_created_and_updated_at(column_names)
     end
 
     def create_table(table_name, options={}, &block)
@@ -95,7 +96,6 @@ module Kwery
         @__table__ = arr.join('_')  # default table name (ex. BlogPost => 'blog_post')
         @__column_names__ = []
         @__columns__ = []
-        #extend(MetaModel)
       end
       return self
     end
