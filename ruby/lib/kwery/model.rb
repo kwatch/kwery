@@ -23,7 +23,7 @@ module Kwery
     def self.included(klass)
       klass.class_eval do
         arr = []
-        klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[^A-Z]+)/) {|s| arr << s.downcase }
+        klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[a-z0-9_]+)/) {|s| arr << s.downcase }
         @__table__ = arr.join('_')
         @__column_names__ = []
         @__columns__ = []
@@ -36,43 +36,48 @@ module Kwery
           @__table__ = table_name
         end
         def __before_insert__(values)
-          ## pass
+          ## empty
         end
         def __before_update__(values)
-          ## pass
+          ## empty
         end
         def self.add_columns(*column_names)
-          @__column_names__ ||= []
-          @__column_names__.concat(column_names.collect {|col| col.to_sym })
+          list = column_names.collect {|col| col.to_sym }
+          @__column_names__ ? (@__column_names__ = list) : @__column_names__.concat(list)
           attr_accessor *column_names
-          defs = column_names.collect do |col|
-            <<-END
+          buf = ''
+          column_names.each do |col|
+            buf << <<-END
               def #{col}=(val)
                 @__old__[:#{col}] = val if @__old__ && @#{col} != val
                 @#{col} = val
               end
             END
           end
-          defs << <<-END
-              has_created_at = @__column_names__.include?(:created_at)
-              has_updated_at = @__column_names__.include?(:updated_at)
-              if has_created_at && has_updated_at
+          has_created_at = @__column_names__.include?(:created_at)
+          has_updated_at = @__column_names__.include?(:updated_at)
+          if has_created_at && has_updated_at
+            buf << <<-END
                 def __before_insert__(values)
                   values[:created_at] = @created_at = __current_timestamp__()
                   values[:updated_at] = @updated_at = __current_timestamp__()
                 end
-              elsif has_created_at
+            END
+          elsif has_created_at
+            buf << <<-END
                 def __before_insert__(values)
                   values[:created_at] = @created_at = __current_timestamp__()
                 end
-              end
-              if has_updated_at
+            END
+          end
+          if has_updated_at
+            buf << <<-END
                 def __before_update__(values)
                   values[:updated_at] = @updated_at = __current_timestamp__()
                 end
-              end
-          END
-          self.class_eval(defs.join)
+            END
+          end
+          self.class_eval(buf)
         end
         def self.create_table(table_name, options={}, &block)
           require 'kwery/table'
