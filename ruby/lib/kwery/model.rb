@@ -164,7 +164,7 @@ module Kwery
     end
 
     def __insert__(query)
-      raise "Already inserted." if @__old__
+      raise Kwery::Error.new("Already inserted.") if @__old__
       values = self.to_hash
       __before_insert__(values)
       query.insert(self.class.__table__, self.to_hash)
@@ -172,7 +172,7 @@ module Kwery
     end
 
     def __update__(query)
-      raise "Not inserted object." if @__old__.nil?
+      raise Kwery::Error.new("Not inserted object.") if @__old__.nil?
       if !@__old__.empty?
         values = {}
         @__old__.each do |name, old_val|
@@ -186,7 +186,7 @@ module Kwery
     end
 
     def __delete__(query)
-      raise "Not inserted object." if @__old__.nil?
+      raise Kwery::Error.new("Not inserted object.") if @__old__.nil?
       query.delete(self.class.__table__, :id, self.id)
       __deleted__(query)
     end

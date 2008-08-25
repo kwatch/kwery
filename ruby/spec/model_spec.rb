@@ -182,7 +182,7 @@ describe "Kwery::Model#__insert__" do
 
   it "raises error when selected model object." do
     obj = q.get(Team, :id, sos.id)
-    proc { q.insert(obj) }.should raise_error(RuntimeError, 'Already inserted.')
+    proc { q.insert(obj) }.should raise_error(Kwery::Error, 'Already inserted.')
   end
 
   it "sets created_at and updated_at column automatically." do
@@ -212,7 +212,7 @@ describe "Kwery::Model#__update__" do
 
   it "raises error when non-inserted object" do
     team = Team.new(:name=>'Saitama', :deleted=>false)
-    proc { q.update(team) }.should raise_error(RuntimeError, 'Not inserted object.')
+    proc { q.update(team) }.should raise_error(Kwery::Error, 'Not inserted object.')
   end
 
   it "sets updated_at column automatically" do
@@ -246,7 +246,7 @@ describe "Kwery::Model.__delete__" do
 
   it "raises error when non-inserted object" do
     member = Member.new(:name=>'Minoru', :deleted=>false)
-    proc { q.delete(member) }.should raise_error(RuntimeError, 'Not inserted object.')
+    proc { q.delete(member) }.should raise_error(Kwery::Error, 'Not inserted object.')
   end
 
 end

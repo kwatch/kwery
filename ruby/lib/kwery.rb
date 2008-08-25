@@ -7,13 +7,19 @@
 
 
 ###
-### simple database library
+### simple database access library
 ###
 module Kwery
+
 
   ## represents dummy data
   module UNDEFINED
   end
+
+
+  class Error < StandardError
+  end
+
 
 end
 
