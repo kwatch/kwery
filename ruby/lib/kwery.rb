@@ -26,3 +26,12 @@ end
 require 'kwery/helper'
 require 'kwery/query'
 require 'kwery/model'
+
+
+#--
+#class String
+#  def __table__
+#    return self
+#  end
+#end
+#++
