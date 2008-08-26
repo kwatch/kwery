@@ -622,3 +622,43 @@ describe "Kwery::Qwery#last_insert_id" do
   end
 
 end
+
+
+describe "Kwery::Qwery#with" do
+
+  q2 = q3 = nil
+
+  it "returns new query object" do
+    q2 = q.with() {|c| c.where('created_at >', '2000-01-01').order_by(:id) }
+    q2.should be_a_kind_of(Kwery::Query)
+    q2.__id__.should_not == q.__id__
+  end
+
+  it "creates a new query object which has QueryContext object" do
+    q.context.should == nil
+    q2.context.should_not == nil
+    q2.context._where.should == "created_at > '2000-01-01'"
+    q2.context._order_by.should == "id"
+  end
+
+  it "shouldn't be changed when receiver" do
+    w2 = q2.context._where[0..-1]
+    q3 = q2.with() {|c| c.where_is_not_null(:updated_at).limit(0, 10) }
+    q3.should be_a_kind_of(Kwery::Query)
+    q3.__id__.should_not == q2.__id__
+    q2.context._where.should == "created_at > '2000-01-01'"
+    q3.context._where.should == "created_at > '2000-01-01' and updated_at is not null"
+    q2.context._limit.should == nil
+    q3.context._limit.should == [0, 10]
+  end
+
+  it "shouldn't be changed when select/insert/update/delete" do
+    sql = ''
+    q3.output = sql
+    result = q3.select('members') {|c| c.where('created_at < ', '2050-01-01') }
+    q3.output = nil
+    q3.context._where.should == "created_at > '2000-01-01' and updated_at is not null"
+    sql.should == "select * from members where created_at > '2000-01-01' and updated_at is not null and created_at <  '2050-01-01' order by id limit 0, 10\n"
+  end
+
+end

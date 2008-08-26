@@ -62,6 +62,18 @@ module Kwery
       @_table = @_where = @_order_by = @_group_by = @_having = @_limit = @_join = nil
     end
 
+    def dup
+      c = super
+      c._table    = @_table.dup    if @_table
+      c._where    = @_where.dup    if @_where
+      c._order_by = @_order_by.dup if @_order_by
+      c._group_by = @_group_by.dup if @_group_by
+      c._having   = @_having.dup   if @_having
+      c._limit    = @_limit.dup    if @_limit
+      c._join     = @_join.dup     if @join
+      return c
+    end
+
     def build_select_sql(columns='*')
       sql = "select #{columns || '*'} from #{@_table}"
       sql << @_join if @_join
@@ -281,7 +293,7 @@ module Kwery
   class Query
     include Common
 
-    attr_accessor :conn, :output, :table_prefix
+    attr_accessor :conn, :output, :table_prefix, :context
 
     class <<self
       #attr_accessor :default_class
@@ -293,8 +305,15 @@ module Kwery
       @auto_free = true
     end
 
+    def dup
+      q = super
+      q.context = @context.dup if @context
+      return q
+    end
+
     def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
@@ -329,7 +348,8 @@ module Kwery
     protected :_collect_models
 
     def get_all(table, arg1=UNDEFINED, arg2=UNDEFINED)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
@@ -344,7 +364,8 @@ module Kwery
     end
 
     def select(table, columns=nil, klass=nil)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       yield(c) if block_given?
       sql = c.build_select_sql(columns)
       result = execute(sql)
@@ -372,7 +393,8 @@ module Kwery
     end
 
     def select_only(table, column)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       yield(c) if block_given?
       sql = c.build_select_sql(column)
       result = execute(sql)
@@ -387,7 +409,8 @@ module Kwery
     def insert(table, values=nil)
       return table.__insert__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to insert are required.") if values.nil?
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       sql = c.build_insert_sql(values)
       #c.clear()
       return execute(sql)
@@ -400,7 +423,8 @@ module Kwery
     def update(table, values=nil, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       unless c._where
@@ -412,7 +436,8 @@ module Kwery
     end
 
     def update_all(table, values)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       sql = c.build_update_sql(values)
       #c.clear()
       return execute(sql)
@@ -420,7 +445,8 @@ module Kwery
 
     def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__delete__(self) if table.is_a?(Model)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       unless c._where
@@ -432,7 +458,8 @@ module Kwery
     end
 
     def delete_all(table)
-      c = QueryContext.new(to_table_name(table))
+      c = @context ? @context.dup : QueryContext.new()
+      c._table = to_table_name(table)
       sql = c.build_delete_sql()
       #c.clear()
       return execute(sql)
@@ -476,6 +503,19 @@ module Kwery
 
     def rollback
       return execute('rollback')
+    end
+
+    def with(arg1=UNDEFINED, arg2=UNDEFINED, &block)
+      q = self.dup
+      q.with!(arg1, arg2, &block)
+      return q    # return new Query object
+    end
+
+    def with!(arg1=UNDEFINED, arg2=UNDEFIEND)
+      c = (@context ||= QueryContext.new)
+      c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(c) if block_given?
+      return self
     end
 
   end
