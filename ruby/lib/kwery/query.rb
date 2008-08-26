@@ -44,7 +44,7 @@ module Kwery
   end
 
 
-  class QueryBuilder
+  class QueryContext
     include Common
 
     attr_accessor :_table, :_where, :_order_by, :_group_by, :_having, :_limit, :_join
@@ -294,12 +294,12 @@ module Kwery
     end
 
     def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      yield(builder) if block_given?
-      sql = builder.build_select_sql('*')
+      c = QueryContext.new(to_table_name(table))
+      c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(c) if block_given?
+      sql = c.build_select_sql('*')
       result = execute(sql)
-      #builder.clear()
+      #c.clear()
       if table.is_a?(String)
         ret = result.fetch_hash()
       else
@@ -329,12 +329,12 @@ module Kwery
     protected :_collect_models
 
     def get_all(table, arg1=UNDEFINED, arg2=UNDEFINED)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      yield(builder) if block_given?
-      sql = builder.build_select_sql('*')
+      c = QueryContext.new(to_table_name(table))
+      c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(c) if block_given?
+      sql = c.build_select_sql('*')
       result = execute(sql)
-      #builder.clear()
+      #c.clear()
       list = []
       if table.is_a?(String) ; result.each_hash {|hash| list << hash }
       else                   ; _collect_models(result, table, list)
@@ -344,11 +344,11 @@ module Kwery
     end
 
     def select(table, columns=nil, klass=nil)
-      builder = QueryBuilder.new(to_table_name(table))
-      yield(builder) if block_given?
-      sql = builder.build_select_sql(columns)
+      c = QueryContext.new(to_table_name(table))
+      yield(c) if block_given?
+      sql = c.build_select_sql(columns)
       result = execute(sql)
-      #builder.clear()
+      #c.clear()
       list = []
       if klass.nil?
         if    table.is_a?(String)   ; result.each_hash {|hash| list << hash }
@@ -372,11 +372,11 @@ module Kwery
     end
 
     def select_only(table, column)
-      builder = QueryBuilder.new(to_table_name(table))
-      yield(builder) if block_given?
-      sql = builder.build_select_sql(column)
+      c = QueryContext.new(to_table_name(table))
+      yield(c) if block_given?
+      sql = c.build_select_sql(column)
       result = execute(sql)
-      #builder.clear()
+      #c.clear()
       #return result.collect {|arr| arr.first }
       list = []
       result.each_array {|arr| list << arr.first }
@@ -387,9 +387,9 @@ module Kwery
     def insert(table, values=nil)
       return table.__insert__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to insert are required.") if values.nil?
-      builder = QueryBuilder.new(to_table_name(table))
-      sql = builder.build_insert_sql(values)
-      #builder.clear()
+      c = QueryContext.new(to_table_name(table))
+      sql = c.build_insert_sql(values)
+      #c.clear()
       return execute(sql)
     end
 
@@ -400,41 +400,41 @@ module Kwery
     def update(table, values=nil, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      yield(builder) if block_given?
-      unless builder._where
+      c = QueryContext.new(to_table_name(table))
+      c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(c) if block_given?
+      unless c._where
         raise ArgumentError.new("update condition is reqiured.")
       end
-      sql = builder.build_update_sql(values)
-      #builder.clear()
+      sql = c.build_update_sql(values)
+      #c.clear()
       return execute(sql)
     end
 
     def update_all(table, values)
-      builder = QueryBuilder.new(to_table_name(table))
-      sql = builder.build_update_sql(values)
-      #builder.clear()
+      c = QueryContext.new(to_table_name(table))
+      sql = c.build_update_sql(values)
+      #c.clear()
       return execute(sql)
     end
 
     def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__delete__(self) if table.is_a?(Model)
-      builder = QueryBuilder.new(to_table_name(table))
-      builder.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
-      yield(builder) if block_given?
-      unless builder._where
+      c = QueryContext.new(to_table_name(table))
+      c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
+      yield(c) if block_given?
+      unless c._where
         raise ArgumentError.new("delete condition is reqiured.")
       end
-      sql = builder.build_delete_sql()
-      #builder.clear()
+      sql = c.build_delete_sql()
+      #c.clear()
       return execute(sql)
     end
 
     def delete_all(table)
-      builder = QueryBuilder.new(to_table_name(table))
-      sql = builder.build_delete_sql()
-      #builder.clear()
+      c = QueryContext.new(to_table_name(table))
+      sql = c.build_delete_sql()
+      #c.clear()
       return execute(sql)
     end
 

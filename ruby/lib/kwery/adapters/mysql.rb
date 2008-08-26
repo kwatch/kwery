@@ -78,7 +78,7 @@ module Kwery
   end
 
 
-  class MySQLQueryBuilder < QueryBuilder
+  class MySQLQueryContext < QueryContext
     include MySQLCommon
 
   end
@@ -181,10 +181,10 @@ module Kwery
   end
 
 
-  class QueryBuilder
+  class QueryContext
 
     def self.new(*args)
-      return MySQLQueryBuilder.__new__(*args)  # QueryBuilder.new returns MySQLQueryBuilder object
+      return MySQLQueryContext.__new__(*args)  # QueryContext.new returns MySQLQueryContext object
     end
 
   end
