@@ -337,7 +337,7 @@ p records  #=> [{"id"=>1, "name"=>"Haruhi", "team_id"=>1, ... },
 % else raise "ERROR: line=#{__LINE__}"
 % end
 
-Also left outer join is available.
+Left outer join is available.
 
 % if RUBY
 .-------------------- 055_select_from5.rb
@@ -348,6 +348,37 @@ p records  #=> [[1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>,
            #    1, "Haruhi", nil, 1, #<Mysql::Time>, #<Mysql::Time>],
            #    [2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>,
            #    nil, nil, nil, nil, nil, nil]]
+.--------------------
+% else raise "ERROR: line=#{__LINE__}"
+% end
+
+The following is an example to count members for each teams.
+
+% if RUBY
+.-------------------- 056_select_count6.rb
+.#+++
+require 'setup'
+q = $q
+.#---
+records = q.select('teams, members', 'teams.id, count(*) count', Array) {|c|
+  c.where('teams.id = members.team_id').group_by('teams.id').order_by('teams.id')
+}
+      #=> select teams.id, count(*) count from teams, members
+      #   where teams.id = members.team_id
+      #   group by teams.id
+      #   order by teams.id
+
+p records    #=> [[1, 3], [2, 4]]
+
+records = q.select('teams t, members m', 't.id, t.name, count(*) count', Array) {|c|
+  c.where('t.id = m.team_id').group_by('t.id, t.name').order_by('t.id')
+}
+      #=> select t.id, t.name, count(*) count from teams t, members m
+      #   where t.id = m.team_id 
+      #   group by t.id, t.name 
+      #   order by t.id
+
+p records    #=> [[1, "sos", 3], [2, "ryouou", 4]]
 .--------------------
 % else raise "ERROR: line=#{__LINE__}"
 % end
@@ -828,6 +859,37 @@ p records  #=> [[1, "sos", "SOS Brigate", nil, #<Mysql::Time>, #<Mysql::Time>,
            #    1, "Haruhi", nil, 1, #<Mysql::Time>, #<Mysql::Time>],
            #    [2, "ryouou", "Ryouou Hight-School", nil, #<Mysql::Time>, #<Mysql::Time>,
            #    nil, nil, nil, nil, nil, nil]]
+.--------------------
+% else raise "ERROR: line=#{__LINE__}"
+% end
+
+The following is an example to count members for each teams.
+
+% if RUBY
+.-------------------- 156_select_count6.rb
+.#+++
+require 'setup'
+q = $q
+.#---
+records = q.select('teams, members', 'teams.id, count(*) count', Array) {|c|
+  c.where('teams.id = members.team_id').group_by('teams.id').order_by('teams.id')
+}
+      #=> select teams.id, count(*) count from teams, members
+      #   where teams.id = members.team_id
+      #   group by teams.id
+      #   order by teams.id
+
+p records    #=> [[1, 3], [2, 4]]
+
+records = q.select('teams t, members m', 't.id, t.name, count(*) count', Array) {|c|
+  c.where('t.id = m.team_id').group_by('t.id, t.name').order_by('t.id')
+}
+      #=> select t.id, t.name, count(*) count from teams t, members m
+      #   where t.id = m.team_id 
+      #   group by t.id, t.name 
+      #   order by t.id
+
+p records    #=> [[1, "sos", 3], [2, "ryouou", 4]]
 .--------------------
 % else raise "ERROR: line=#{__LINE__}"
 % end
