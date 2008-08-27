@@ -176,6 +176,7 @@ module Kwery
 
     def self.new(*args)
       return MySQLQuery.__new__(*args)  # Query.new returns MySQLQuery object
+      #(q = MySQLQuery.allocate()).__send__(:initialize, *args); return q
     end
 
   end
