@@ -469,22 +469,39 @@ module Kwery
       return _execute(sql)
     end
 
-    def _execute(sql)
-      begin
-        __execute__(sql)
-      rescue => ex
-        ex.message << " (SQL: #{sql})"
-        ex.set_backtrace(ex.backtrace[3..-1])
-        raise ex
-      end
-    end
-    protected :_execute
-
     def __execute__(sql)
       #@output << sql << "\n" if @output
       #return @conn.query(sql)
       raise NotImplementedError.new("#{self.class.name}#execute(): not implemented yet.")
     end
+
+    alias _execute __execute__
+    protected :_execute
+
+    def self.debug_mode_off
+      self.class_eval do
+        alias _execute __execute__
+        #protected :_execute
+      end
+    end
+
+    def self.debug_mode_on
+      self.class_eval do
+        def _execute(sql)
+          begin
+            __execute__(sql)
+          rescue => ex
+            ex.message << " (SQL: #{sql})"
+            ex.set_backtrace(ex.backtrace[3..-1])
+            raise ex
+          end
+          #protected :_execute
+        end
+      end
+    end
+
+    self.debug_mode_on
+    #self.debug_mode_off
 
     def insert_model(obj)
       obj.__insert__(self)
