@@ -12,14 +12,17 @@ module Kwery
   module Common
 
     def to_table_name(table)
-      t = nil
-      if    table.is_a?(String) ;  t = table
-      elsif table.is_a?(Class)  ;  t = table.__table__
+      name = nil
+      if    table.is_a?(String) ;  name = table
+      elsif table.is_a?(Class)  ;  name = table.__table__
+      elsif table.is_a?(Array)  ;  name = table.collect {|t| to_table_name(t) }.join(', ')
+      elsif table.is_a?(Hash)   ;  #name = table.collect {|t,s| "#{to_table_name(t)} #{s}" }.join(', ')
+                                   name = table.collect {|s,t| "#{to_table_name(t)} #{s}" }.join(', ')
       elsif table.is_a?(Model)  ;  raise ArgumentError.new("Model not allowed.")
       else                      ;  raise ArgumentError.new("invalid table object.")
       end
-      #return @table_prefix ? @table_prefix + t : t
-      return t
+      #return @table_prefix ? @table_prefix + name : name
+      return name
     end
 
     def escape_string(val)
@@ -74,8 +77,8 @@ module Kwery
       return c
     end
 
-    def build_select_sql(columns='*')
-      sql = "select #{columns || '*'} from #{@_table}"
+    def build_select_sql(columns=nil)
+      sql = "select #{columns ? build_columns(columns) : '*'} from #{@_table}"
       sql << @_join if @_join
       sql << ' where '    << @_where    if @_where
       sql << ' group by ' << @_group_by if @_group_by
@@ -83,6 +86,19 @@ module Kwery
       sql << ' order by ' << @_order_by if @_order_by
       sql << " limit #{@_limit[0]}, #{@_limit[1]}" if @_limit
       return sql
+    end
+
+    def build_columns(columns)
+      return '*' if columns.nil?
+      case columns
+      when String ; return quote_keyword(columns)
+      when Symbol ; return quote_keyword(columns).to_s
+      when Array  ; return columns.collect {|col| quote_keyword(col).to_s }.join(', ')
+      when Hash   ; return columns.collect {|k, v|
+                             v ? "#{quote_keyword(k)} #{quote_keyword(v)}" : quote_keyword(k)
+                           }.join(', ')
+      end
+      return quote_keyword(columns.to_s)
     end
 
     def build_insert_sql(values)

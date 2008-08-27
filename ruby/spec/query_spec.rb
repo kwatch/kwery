@@ -691,3 +691,57 @@ describe "Kwery::Query#_execute()" do
   end
 
 end
+
+
+describe "Kwery::QueryContext#build_columns" do
+
+  it "returns '*' if nil passed" do
+    c = Kwery::QueryContext.new
+    c.build_columns(nil).should == '*'
+  end
+
+  it "returns argument as is if string passed" do
+    c = Kwery::QueryContext.new
+    s = 'foo, bar'
+    c.build_columns(s).should == s
+  end
+
+  it "returns string if symbol passed" do
+    c = Kwery::QueryContext.new
+    c.build_columns(:id).should == 'id'
+  end
+
+  it "returns items concatenated by ', ' if array passed" do
+    c = Kwery::QueryContext.new
+    c.build_columns([:id, :name, :created_at]).should == 'id, name, created_at'
+  end
+
+  it "returns items concatenated by ', ' if hash passed" do
+    c = Kwery::QueryContext.new
+    c.build_columns({:id=>nil, 'count(*)'=>:count}).should == 'count(*) count, id'
+  end
+
+end
+
+
+describe "Kwery::Common::to_table_name" do
+
+  it "returns string as it is" do
+    s = 'teams, members'
+    q.to_table_name(s).should == s
+  end
+
+  it "converts ModelClass to 'table_name'" do
+    q.to_table_name(Member).should == 'members'
+  end
+
+  it "concatenates array with ','" do
+    q.to_table_name([Team, Member, 'users']).should == 'teams, members, users'
+  end
+
+  it "concatenates hash with ','" do
+    #q.to_table_name(Team=>'t', Member=>'m').should == 'teams t, members m'
+    q.to_table_name('t'=>Team, 'm'=>Member).should == 'members m, teams t'
+  end
+
+end
