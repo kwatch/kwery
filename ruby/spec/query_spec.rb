@@ -432,7 +432,7 @@ describe 'Kwery::QueryHelper#bind_references_to' do
 end
 
 
-describe 'Kwery::QueryHelper#bin_referenced_from' do
+describe 'Kwery::QueryHelper#bind_referenced_from' do
 
   ## multiple=false
 
