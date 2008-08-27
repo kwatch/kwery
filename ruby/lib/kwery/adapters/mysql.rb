@@ -92,12 +92,12 @@ module Kwery
       @auto_free = false
     end if HAS_MOTTO
 
-    def execute(sql)
+    def __execute__(sql)
       @output << sql << "\n" if @output
       return @conn.query(sql)
     end if HAS_MOTTO
 
-    def execute(sql)
+    def __execute__(sql)
       @output << sql << "\n" if @output
       #return @conn.query(sql)
       stmt = @conn.prepare(sql)

@@ -317,7 +317,7 @@ module Kwery
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
-      result = execute(sql)
+      result = _execute(sql)
       #c.clear()
       if table.is_a?(String)
         ret = result.fetch_hash()
@@ -353,7 +353,7 @@ module Kwery
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
-      result = execute(sql)
+      result = _execute(sql)
       #c.clear()
       list = []
       if table.is_a?(String) ; result.each_hash {|hash| list << hash }
@@ -368,7 +368,7 @@ module Kwery
       c._table = to_table_name(table)
       yield(c) if block_given?
       sql = c.build_select_sql(columns)
-      result = execute(sql)
+      result = _execute(sql)
       #c.clear()
       list = []
       if klass.nil?
@@ -397,7 +397,7 @@ module Kwery
       c._table = to_table_name(table)
       yield(c) if block_given?
       sql = c.build_select_sql(column)
-      result = execute(sql)
+      result = _execute(sql)
       #c.clear()
       #return result.collect {|arr| arr.first }
       list = []
@@ -413,7 +413,7 @@ module Kwery
       c._table = to_table_name(table)
       sql = c.build_insert_sql(values)
       #c.clear()
-      return execute(sql)
+      return _execute(sql)
     end
 
     def last_insert_id
@@ -432,7 +432,7 @@ module Kwery
       end
       sql = c.build_update_sql(values)
       #c.clear()
-      return execute(sql)
+      return _execute(sql)
     end
 
     def update_all(table, values)
@@ -440,7 +440,7 @@ module Kwery
       c._table = to_table_name(table)
       sql = c.build_update_sql(values)
       #c.clear()
-      return execute(sql)
+      return _execute(sql)
     end
 
     def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
@@ -454,7 +454,7 @@ module Kwery
       end
       sql = c.build_delete_sql()
       #c.clear()
-      return execute(sql)
+      return _execute(sql)
     end
 
     def delete_all(table)
@@ -462,10 +462,25 @@ module Kwery
       c._table = to_table_name(table)
       sql = c.build_delete_sql()
       #c.clear()
-      return execute(sql)
+      return _execute(sql)
     end
 
     def execute(sql)
+      return _execute(sql)
+    end
+
+    def _execute(sql)
+      begin
+        __execute__(sql)
+      rescue => ex
+        ex.message << " (SQL: #{sql})"
+        ex.set_backtrace(ex.backtrace[3..-1])
+        raise ex
+      end
+    end
+    protected :_execute
+
+    def __execute__(sql)
       #@output << sql << "\n" if @output
       #return @conn.query(sql)
       raise NotImplementedError.new("#{self.class.name}#execute(): not implemented yet.")

@@ -662,3 +662,32 @@ describe "Kwery::Qwery#with" do
   end
 
 end
+
+
+describe "Kwery::Query#_execute()" do
+
+  it "sets backtrace when SQL error raised." do
+    %w[get get_all select insert update delete].each do |op|
+      q.output = (sql = '')
+      case op
+      when 'insert' ;  values = {:'.invalid.name.1'=>1}
+      when 'update' ;  values = {:id=>1}
+      else          ;  values = nil
+      end
+      ex = nil
+      proc {
+        begin
+          if values ; q.__send__(op, 'teams', values) {|c| c.where('id =', nil) }
+          else      ; q.__send__(op, 'teams')         {|c| c.where('id =', nil) }
+          end
+        rescue => ex
+          raise ex
+        end
+      }.should raise_error(Kwery::SQL_ERROR_CLASS)
+      ex.backtrace[0].should match(/query.rb:\d+:in `#{op}'$/)
+      s = ' (SQL: ' + sql.chomp + ')'
+      ex.message[-s.length..-1].should == s
+    end
+  end
+
+end
