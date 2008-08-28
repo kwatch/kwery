@@ -103,6 +103,16 @@ You can use Kwery as database library (like DBI), or as O/R Mapper.
     </li>
   </ul>
   </li>
+  <li><a href="#Others">Others</a>
+  <ul>
+    <li><a href="#Table name alias in SQL">Table name alias in SQL</a>
+    </li>
+    <li><a href="#Query#with()">Query#with()</a>
+    </li>
+    <li><a href="#Named scope">Named scope</a>
+    </li>
+  </ul>
+  </li>
 </ul>
 <br>
 
@@ -1172,7 +1182,7 @@ result (only Haruhi and Konata have their own team)</div>
 </p>
 <p>For example, assume the folloing tables.
 </p>
-<pre class="program">create table tags (
+<pre class="program">create_table tags (
   id       integer        primary key auto_increment,
   name     varchar(255)   not null unique
 );
@@ -1200,6 +1210,7 @@ conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
 q = Kwery::Query.new(conn)
 q.output = $stderr
 
+## without model class
 posts = q.select(<strong>'posts, tags, taggings'</strong>, 'posts.*') {|c|
   <strong>c.where('tags.id = taggings.tag_id')</strong>
   <strong>c.where('posts.id = taggings.post_id')</strong>
@@ -1209,6 +1220,111 @@ posts = q.select(<strong>'posts, tags, taggings'</strong>, 'posts.*') {|c|
       #   where tags.id = taggings.tag_id
       #     and posts.id = taggings.post_id
       #     and tags.name = 'anime'
+</pre>
+<br>
+
+
+<br>
+
+
+<a name="Others"></a>
+<h2 class="section1">Others</h2>
+<a name="Table name alias in SQL"></a>
+<h3 class="section2">Table name alias in SQL</h3>
+<p>It is specify table name alias in SQL.
+</p>
+<a name="ex401_alias.rb"></a>
+<pre class="program">## without model class
+posts = q.select(<strong>'posts p, tags t, taggings g'</strong>, 'p.*') {|c|
+  <strong>c.where('t.id = g.tag_id').where('p.id = g.post_id')</strong>.where('t.name', 'anime')
+}
+      #=&gt; select posts.* from posts p, tags, taggings
+      #   where t.id = g.tag_id and p.id = g.post_id and t.name = 'anime'
+
+## with model class
+class Post
+  include Kwery::Model
+  set_table_name('posts')
+end
+class Tag
+  include Kwery::Model
+  set_table_name('tags')
+end
+class Tagging
+  include Kwery::Model
+  set_table_name('taggings')
+end
+
+posts = q.select(<strong>{'p'=&gt;Post, 't'=&gt;Tag, 'g'=&gt;Tagging}</strong>, 'p.*') {|c|
+  <strong>c.where('t.id = g.tag_id').where('p.id = g.post_id')</strong>.where('t.name', 'anime')
+}
+      #=&gt; select p.* from posts p, tags t, taggings g
+      #   where t.id = g.tag_id and p.id = g.post_id and t.name = 'anime'
+</pre>
+<br>
+
+
+<a name="Query#with()"></a>
+<h3 class="section2">Query#with()</h3>
+<p>Query#with() is a solution to set conditions before select/update/delete.
+</p>
+<a name="ex402_with.rb"></a>
+<pre class="program">## set conditions before select
+t = Time.mktime(2000, 1, 1)
+members = q.<strong>with() {|c|</strong>
+  <strong>c.where('created_at &gt;=', t).order_by(:id)</strong>
+<strong>}</strong>.get_all('members') {|c|
+  c.where('team_id', 1)
+}
+   #=&gt; select * from members
+   #   where created_at &gt; '2000-01-01 00:00:00' and team_id = 1
+   #   order by id
+
+## or
+members = q.<strong>with('created_at &gt;=', t) {|c| c.order_by(:id) }</strong>.get_all('members', :team_id, 1)
+   #=&gt; select * from members
+   #   where created_at &gt; '2000-01-01 00:00:00' and team_id = 1
+   #   order by id
+</pre>
+<p>Query#with() returns a new Query object, so you can save it to variable.
+</p>
+<a name="ex403_with.rb"></a>
+<pre class="program">## save new Query object which q.with() returns
+t = Time.mktime(2000, 1, 1)
+q2 = q.with() {|c| c.where('created_at &gt;=', t).order_by(:id) }
+members = q2.get_all('members', :team_id, 1)
+   #=&gt; select * from members
+   #   where created_at &gt; '2000-01-01 00:00:00' and team_id = 1
+   #   order by id
+teams = q2.get_all('teams') {|c| c.where_is_not_null(:leader_id) }
+   #=&gt; select * from teams
+   #   where created_at &gt; '2000-01-01 00:00:00' and leader_id is not null
+   #   order by id
+</pre>
+<br>
+
+
+<a name="Named scope"></a>
+<h3 class="section2">Named scope</h3>
+<p>If you love named_scope of ActiveRecord, define helper methods in Query class using Query#with().
+</p>
+<a name="ex404_with.rb"></a>
+<pre class="program">## define helper methods
+module MyCondition
+  def newer_than(time)
+    return self.with() {|c| c.where('created_at &gt;=', time).order_by(:id) }
+  end
+end
+class Kwery::Query
+  include MyCondition
+end
+
+## usage
+t = Time.mktime(2000, 1, 1)
+members = q.newer_than(t).get_all('members', :team_id, 1)
+   #=&gt; select * from members
+   #   where created_at &gt; '2000-01-01 00:00:00' and team_id = 1
+   #   order by id
 </pre>
 <br>
 

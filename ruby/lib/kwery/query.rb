@@ -96,7 +96,7 @@ module Kwery
       when Array  ; return columns.collect {|col| quote_keyword(col).to_s }.join(', ')
       when Hash   ; return columns.collect {|k, v|
                              v ? "#{quote_keyword(k)} #{quote_keyword(v)}" : quote_keyword(k)
-                           }.join(', ')
+                           }.join(', ')  # undocumented, experimental, not recommended
       end
       return quote_keyword(columns.to_s)
     end
