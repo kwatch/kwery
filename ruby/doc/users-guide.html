@@ -22,6 +22,8 @@
 <p>Kwery is a pretty database library.
 You can use Kwery as database library (like DBI), or as O/R Mapper.
 </p>
+<p>Features:
+</p>
 <ul type="disc">
 <li>Kwery is very small and lightweight.
    It is suitable especially for CGI script.
@@ -38,6 +40,39 @@ You can use Kwery as database library (like DBI), or as O/R Mapper.
 <li>Kwery doesn't have validation functionality currently.
 </li>
 </ul>
+<p>Example:
+</p>
+<a name="000_exaple.rb"></a>
+<pre class="program">require 'kwery'
+require 'kwery/adapters/mysql'
+conn = Kwery.connect('localhost', 'username', 'password', 'dbname')
+q = Kwery::Qwery.new(conn)
+q.output = $stderr  # for debug
+
+## select * from teams where id = 123
+team = q.get('teams') {|c| c.where(:id, 123) }
+		    # or q.get('teams', :id, 123)
+
+## select * from members
+## where team_id = team['id'] and created_at &gt; '2008-01-01'
+## order by name desc
+t = Time.mktime(2008, 1, 1)
+members = q.get_all('members') {|c|
+  c.where(:team_id, team['id']).where('created_at &gt;', t).order_by_desc(:name)
+}
+
+## insert into teams(name, desc) values('sos', 'SOS Brigade')
+q.insert('teams', {:name=&gt;'sos', :desc=&gt;'SOS Brigade'})
+
+## update teams set name='sos', `desc`='SOS Brigade' where id = 123
+values = {:name=&gt;'sos', :desc=&gt;'SOS Brigade'}
+q.update('teams', values) {|c| c.where(:id, 123) }
+                    # or q.update('teams', values, :id, 123)
+
+## delete from members where name == 'taniguchi'
+q.delete('members') {|c| c.where(:name, 'taniguchi') }
+                    # or q.delete('teams', :name, 'taniguchi')
+</pre>
 <a name="Table of contents"></a>
 <h3 class="section2">Table of contents</h3>
 <ul>
@@ -105,6 +140,8 @@ You can use Kwery as database library (like DBI), or as O/R Mapper.
   </li>
   <li><a href="#Others">Others</a>
   <ul>
+    <li><a href="#Corresponding SQL">Corresponding SQL</a>
+    </li>
     <li><a href="#Table name alias in SQL">Table name alias in SQL</a>
     </li>
     <li><a href="#Query#with()">Query#with()</a>
@@ -1229,6 +1266,151 @@ posts = q.select(<strong>'posts, tags, taggings'</strong>, 'posts.*') {|c|
 
 <a name="Others"></a>
 <h2 class="section1">Others</h2>
+<a name="Corresponding SQL"></a>
+<h3 class="section2">Corresponding SQL</h3>
+<p>Methods of Kwery::Query class:
+</p>
+<div align="center">
+<table class="table1" border="1" cellspacing="0">
+ <tr class="tr1">
+  <th class="th1">Methods of Kwery::Query class</th>
+  <th class="th1">Corresponding SQL</th>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">get(<em>table</em>)</td>
+  <td class="td1">select * from <em>table</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">get_all(<em>table</em>)</td>
+  <td class="td1">select * from <em>table</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">select(<em>table</em>, <em>columns</em>)</td>
+  <td class="td1">select <em>columns</em> from <em>table</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">insert(<em>table</em>, <em>values</em>)</td>
+  <td class="td1">insert into <em>table</em> values <em>values</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">update(<em>table</em>, <em>values</em>)</td>
+  <td class="td1">update <em>table</em> set <em>values</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">update_all(<em>table</em>, <em>values</em>)</td>
+  <td class="td1">update <em>table</em> set <em>values</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">delete(<em>table</em>)</td>
+  <td class="td1">delete from <em>table</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">delete_all(<em>table</em>)</td>
+  <td class="td1">delete from <em>table</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">execute(<em>sql</em>)</td>
+  <td class="td1">-</td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">with()</td>
+  <td class="td1">-</td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">with!()</td>
+  <td class="td1">-</td>
+ </tr>
+</table>
+</div>
+<p>Methods of Kwery::QueryContext class:
+</p>
+<div align="center">
+<table class="table1" border="1" cellspacing="0">
+ <tr class="tr1">
+  <th class="th1">Methods of Kwery::QueryContext class</th>
+  <th class="th1">Corresponding SQL</th>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">where(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">where <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">or_where(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">... or where <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">or_where!(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">(...) or where <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">and_where(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">... and where <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">and_where!(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">(...) and where <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">where_in(<em>column</em>, <em>array</em>)</td>
+  <td class="td1">where <em>column</em> in <em>elem1,elem2,...</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">where_between(<em>column</em>, <em>val1</em>, <em>val2</em>)</td>
+  <td class="td1">where <em>column</em> between <em>val1</em> and <em>val2</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">where_is_null(<em>column</em>)</td>
+  <td class="td1">where <em>column</em> is null</td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">where_is_not_null(<em>column</em>)</td>
+  <td class="td1">where <em>column</em> is not null</td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">group_by(<em>columns</em>)</td>
+  <td class="td1">group by <em>columns</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">order_by(<em>columns</em>)</td>
+  <td class="td1">order by <em>columns</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">order_by_desc(<em>columns</em>)</td>
+  <td class="td1">order by <em>columns</em> desc</td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">having(<em>column</em>, <em>value</em>)</td>
+  <td class="td1">having <em>column</em> = <em>value</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">limit(<em>offset</em>, <em>count</em>)</td>
+  <td class="td1">limit <em>offset</em>, <em>count</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">join(<em>join_table</em>, <em>column</em>, <em>pkey</em>)</td>
+  <td class="td1">join <em>join_table</em> on <em>table</em>.<em>column</em> = <em>join_table</em>.<em>pkey</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">left_outer_join(<em>join_table</em>, <em>column</em>, <em>pkey</em>)</td>
+  <td class="td1">left_outer_join <em>join_table</em> on <em>table</em>.<em>column</em> = <em>join_table</em>.<em>pkey</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">left_inner_join(<em>join_table</em>, <em>column</em>, <em>pkey</em>)</td>
+  <td class="td1">left_inner_join <em>join_table</em> on <em>table</em>.<em>column</em> = <em>join_table</em>.<em>pkey</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">right_outer_join(<em>join_table</em>, <em>column</em>, <em>pkey</em>)</td>
+  <td class="td1">right_outer_join <em>join_table</em> on <em>table</em>.<em>column</em> = <em>join_table</em>.<em>pkey</em></td>
+ </tr>
+ <tr class="tr1">
+  <td class="td1">right_inner_join(<em>join_table</em>, <em>column</em>, <em>pkey</em>)</td>
+  <td class="td1">right_inner_join <em>join_table</em> on <em>table</em>.<em>column</em> = <em>join_table</em>.<em>pkey</em></td>
+ </tr>
+</table>
+</div>
+<br>
+
+
 <a name="Table name alias in SQL"></a>
 <h3 class="section2">Table name alias in SQL</h3>
 <p>It is specify table name alias in SQL.
