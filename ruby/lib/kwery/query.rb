@@ -327,9 +327,15 @@ module Kwery
       return q
     end
 
-    def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
+    def _get_context(table)    # :nodoc:
       c = @context ? @context.dup : QueryContext.new()
       c._table = to_table_name(table)
+      return c
+    end
+    private :_get_context
+
+    def get(table, arg1=UNDEFINED, arg2=UNDEFINED)
+      c = _get_context(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
@@ -364,8 +370,7 @@ module Kwery
     protected :_collect_models
 
     def get_all(table, arg1=UNDEFINED, arg2=UNDEFINED)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       sql = c.build_select_sql('*')
@@ -380,8 +385,7 @@ module Kwery
     end
 
     def select(table, columns=nil, klass=nil)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       yield(c) if block_given?
       sql = c.build_select_sql(columns)
       result = _execute(sql)
@@ -409,8 +413,7 @@ module Kwery
     end
 
     def select_only(table, column)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       yield(c) if block_given?
       sql = c.build_select_sql(column)
       result = _execute(sql)
@@ -425,8 +428,7 @@ module Kwery
     def insert(table, values=nil)
       return table.__insert__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to insert are required.") if values.nil?
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       sql = c.build_insert_sql(values)
       #c.clear()
       return _execute(sql)
@@ -439,8 +441,7 @@ module Kwery
     def update(table, values=nil, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__update__(self) if table.is_a?(Model)
       raise ArgumentError.new("values to update are required.") if values.nil?
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       unless c._where
@@ -452,8 +453,7 @@ module Kwery
     end
 
     def update_all(table, values)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       sql = c.build_update_sql(values)
       #c.clear()
       return _execute(sql)
@@ -461,8 +461,7 @@ module Kwery
 
     def delete(table, arg1=UNDEFINED, arg2=UNDEFINED)
       return table.__delete__(self) if table.is_a?(Model)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       c.where(arg1, arg2) unless arg1.equal?(UNDEFINED)
       yield(c) if block_given?
       unless c._where
@@ -474,8 +473,7 @@ module Kwery
     end
 
     def delete_all(table)
-      c = @context ? @context.dup : QueryContext.new()
-      c._table = to_table_name(table)
+      c = _get_context(table)
       sql = c.build_delete_sql()
       #c.clear()
       return _execute(sql)
