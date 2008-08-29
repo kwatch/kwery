@@ -43,7 +43,7 @@ recipes:
   - product:	$(U).txt
     ingreds:	[ ../../doc/$(U).eruby ]
     method*: |
-	sys "erubis -p '\\[% %\\]' -E PercentLine #{@ingred} > #{@product}"
+	sys "erubis -p '\\[% %\\]' -c '@lang=\"ruby\"' -E PercentLine #{@ingred} > #{@product}"
 
   - product:	:retrieve
     ingreds:	[ $(U).txt ]

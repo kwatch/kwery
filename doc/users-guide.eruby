@@ -1,10 +1,12 @@
 .=title:	Kwery User's Guide
 .?release:	$Release$
 .?copyright:	$Copyright$
-.?lastupdate:	$Date: $
 .?stylesheet:	docstyle.css
+.#.?lastupdate:	$Date: $
 
-% RUBY = true
+% RUBY   = @lang == 'ruby'
+% PHP    = @lang == 'php'
+% PYTHON = @lang == 'python'
 
 
 .$ Preface

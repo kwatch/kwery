@@ -1,5 +1,7 @@
 = Kwery README
 
+Release:: $Release$
+
 Kwery is a pretty database library.
 You can use Kwery as database library (like DBI), or as O/R Mapper.
 

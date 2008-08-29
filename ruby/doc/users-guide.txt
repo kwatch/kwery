@@ -1,8 +1,8 @@
 .=title:	Kwery User's Guide
 .?release:	$Release$
 .?copyright:	$Copyright$
-.?lastupdate:	$Date: $
 .?stylesheet:	docstyle.css
+.#.?lastupdate:	$Date: $
 
 
 
