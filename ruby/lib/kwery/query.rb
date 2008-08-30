@@ -47,15 +47,10 @@ module Kwery
   end
 
 
-  class QueryContext
+  class BaseQueryContext
     include Common
 
     attr_accessor :_table, :_where, :_order_by, :_group_by, :_having, :_limit, :_join
-
-    class <<self
-      #attr_accessor :default_class
-      alias __new__ new
-    end
 
     def initialize(table_name=nil)
       @_table = table_name
@@ -306,15 +301,20 @@ module Kwery
   end
 
 
-  class Query
-    include Common
-
-    attr_accessor :conn, :output, :table_prefix, :context
+  class QueryContext < BaseQueryContext
 
     class <<self
       #attr_accessor :default_class
       alias __new__ new
     end
+
+  end
+
+
+  class BaseQuery
+    include Common
+
+    attr_accessor :conn, :output, :table_prefix, :context
 
     def initialize(conn)
       @conn = conn
@@ -492,31 +492,6 @@ module Kwery
     alias _execute __execute__
     protected :_execute
 
-    def self.debug_mode_off
-      self.class_eval do
-        alias _execute __execute__
-        #protected :_execute
-      end
-    end
-
-    def self.debug_mode_on
-      self.class_eval do
-        def _execute(sql)
-          begin
-            __execute__(sql)
-          rescue => ex
-            ex.message << " (SQL: #{sql})"
-            ex.set_backtrace(ex.backtrace[3..-1])
-            raise ex
-          end
-          #protected :_execute
-        end
-      end
-    end
-
-    self.debug_mode_on
-    #self.debug_mode_off
-
     def insert_model(obj)
       obj.__insert__(self)
     end
@@ -563,6 +538,41 @@ module Kwery
       yield(c) if block_given?
       return self
     end
+
+  end
+
+
+  class Query < BaseQuery
+
+    class <<self
+      #attr_accessor :default_class
+      alias __new__ new
+    end
+
+    def self.debug_mode_off
+      self.class_eval do
+        alias _execute __execute__
+        #protected :_execute
+      end
+    end
+
+    def self.debug_mode_on
+      self.class_eval do
+        def _execute(sql)
+          begin
+            __execute__(sql)
+          rescue => ex
+            ex.message << " (SQL: #{sql})"
+            ex.set_backtrace(ex.backtrace[3..-1])
+            raise ex
+          end
+          #protected :_execute
+        end
+      end
+    end
+
+    self.debug_mode_on
+    #self.debug_mode_off
 
   end
 
