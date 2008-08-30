@@ -58,8 +58,8 @@ end
 
 describe 'Kwery::Model.create_table' do
 
-  q.execute("drop table if exists #{Team.__table__}")
-  q.execute("drop table if exists #{Member.__table__}")
+  q.execute("drop table if exists #{Team.__table_name__}")
+  q.execute("drop table if exists #{Member.__table_name__}")
 
   col_names1 = [:id, :name, :desc, :owner_id, :parent_id, :created_at, :updated_at, :deleted]
   col_names2 = [:id, :name, :desc, :team_id, :birth, :gender, :created_at, :updated_at, :deleted]

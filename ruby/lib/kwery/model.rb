@@ -11,12 +11,12 @@ module Kwery
 
   module MetaModel
 
-    attr_accessor :__table__
+    attr_accessor :__table_name__
     attr_reader :__column_names__
     attr_reader :__columns__, :create_table_sql
 
     def set_table_name(table_name)
-      @__table__ = table_name
+      @__table_name__ = table_name
     end
 
     #--
@@ -103,7 +103,7 @@ module Kwery
       arr = []
       klass.name.split('::')[-1].scan(/(?:[A-Z0-9]+[a-z0-9_]+)/) {|s| arr << s.downcase }
       klass.class_eval do
-        @__table__ = arr.join('_')  # default table name (ex. BlogPost => 'blog_post')
+        @__table_name__ = arr.join('_')  # default table name (ex. BlogPost => 'blog_post')
         @__column_names__ = []
         @__columns__ = []
         #@__support__ = {:update_only_changed=>true, :autoupdate_timestamps=>true}
@@ -168,13 +168,13 @@ module Kwery
 
     def __inserted__(query)
       @id = query.last_insert_id
-      #arr = query.select_only(self.class.__table__, 'created_at', :id, @id) }
+      #arr = query.select_only(self.class.__table_name__, 'created_at', :id, @id) }
       #@created_at = @updated_at = arr.first
       @__old__ = {}
     end
 
     def __updated__(query)
-      #arr = query.select_only(self.class.__table__, 'updated_at', :id, @id) }
+      #arr = query.select_only(self.class.__table_name__, 'updated_at', :id, @id) }
       #@updated_at = arr.first
       @__old__.clear()
     end
@@ -187,7 +187,7 @@ module Kwery
       raise Kwery::Error.new("Already inserted.") if @__old__
       values = self.to_hash
       __before_insert__(values)
-      query.insert(self.class.__table__, values)
+      query.insert(self.class.__table_name__, values)
       __inserted__(query)
     end
 
@@ -196,14 +196,14 @@ module Kwery
       if !@__old__.empty?
         values = changed_values()
         __before_update__(values)
-        query.update(self.class.__table__, values, :id, self.id)
+        query.update(self.class.__table_name__, values, :id, self.id)
         __updated__(query)
       end
     end
 
     def __delete__(query)
       raise Kwery::Error.new("Not inserted object.") if @__old__.nil?
-      query.delete(self.class.__table__, :id, self.id)
+      query.delete(self.class.__table_name__, :id, self.id)
       __deleted__(query)
     end
 

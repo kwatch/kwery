@@ -9,6 +9,9 @@
 % PYTHON = @lang == 'python'
 
 
+Release: $Release$
+
+
 .$ Preface
 
 Kwery is a pretty database library.

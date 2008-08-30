@@ -30,7 +30,7 @@ require 'kwery/model'
 
 #--
 #class String
-#  def __table__
+#  def __table_name__
 #    return self
 #  end
 #end

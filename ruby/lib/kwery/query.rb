@@ -14,7 +14,7 @@ module Kwery
     def to_table_name(table)
       name = nil
       if    table.is_a?(String) ;  name = table
-      elsif table.is_a?(Class)  ;  name = table.__table__
+      elsif table.is_a?(Class)  ;  name = table.__table_name__
       elsif table.is_a?(Array)  ;  name = table.collect {|t| to_table_name(t) }.join(', ')
       elsif table.is_a?(Hash)   ;  #name = table.collect {|t,s| "#{to_table_name(t)} #{s}" }.join(', ')
                                    name = table.collect {|s,t| "#{to_table_name(t)} #{s}" }.join(', ')
