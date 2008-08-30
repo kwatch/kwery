@@ -19,9 +19,7 @@ HAS_MOTTO = arr.all? {|m| ::Mysql::Result.method_defined?(m) }
 
 module Kwery
 
-  module MySQLCommon
-
-    MYSQL_KEYWORDS = %w[
+  MYSQL_KEYWORDS = %w[
           add all alter analyze and as asc asensitive
           before between bigint binary blob both by
           call cascade case change char character check collate column
@@ -60,11 +58,14 @@ module Kwery
           xor
           year_month
           zerofill
-    ]
+  ]
 
-    table = {}
-    MYSQL_KEYWORDS.each {|w| table[w] = w; table[w.intern] = w }
-    MYSQL_KEYWORD_TABLE = table.freeze
+  table = {}
+  MYSQL_KEYWORDS.each {|w| table[w] = w; table[w.intern] = w }
+  MYSQL_KEYWORD_TABLE = table.freeze
+
+
+  module Common
 
     def escape_string(str)
       #return @conn.escape_string(str)
@@ -78,14 +79,7 @@ module Kwery
   end
 
 
-  class MySQLQueryContext < QueryContext
-    include MySQLCommon
-
-  end
-
-
-  class MySQLQuery < Query
-    include MySQLCommon
+  class Query
 
     def initialize(*args)
       super
@@ -172,25 +166,6 @@ module Kwery
   end
 
 
-  class Query
-
-    def self.new(*args)
-      return MySQLQuery.__new__(*args)  # Query.new returns MySQLQuery object
-      #(q = MySQLQuery.allocate()).__send__(:initialize, *args); return q
-    end
-
-  end
-
-
-  class QueryContext
-
-    def self.new(*args)
-      return MySQLQueryContext.__new__(*args)  # QueryContext.new returns MySQLQueryContext object
-    end
-
-  end
-
-
   def self.connect(host=nil, user=nil, passwd=nil, dbname=nil, options=nil)
     return ::Mysql.connect(host||'loalhost', user||'root', passwd, dbname)
   end
@@ -198,41 +173,20 @@ module Kwery
 
   SQL_ERROR_CLASS = ::Mysql::Error
   TIMESTAMP_CLASS = ::Mysql::Time
-  DATE_CLASS = ::Mysql::Time
-
-
-  class MySQLColumn < Column
-    include MySQLCommon
-
-    def to_sql()
-      sql = super
-      if @_type == :timestamp && @_default.nil?
-        sql << (@_not_null ? ' default 0' : ' null default null')
-      end
-      return sql
-    end
-
-  end
+  DATE_CLASS      = ::Mysql::Time
 
 
   class Column
 
-    def self.new(*args)
-      return MySQLColumn.__new__(*args)  # Column.new returns MySQLColumn object
-    end
+    alias _to_sql_orig to_sql
+    private :_to_sql_orig
 
-  end
-
-
-  class MySQLTable < Table
-    include MySQLCommon
-  end
-
-
-  class Table
-
-    def self.new(*args)
-      return MySQLTable.__new__(*args)  # Table.new returns MySQLTable object
+    def to_sql()
+      sql = _to_sql_orig()
+      if @_type == :timestamp && @_default.nil?
+        sql << (@_not_null ? ' default 0' : ' null default null')
+      end
+      return sql
     end
 
   end

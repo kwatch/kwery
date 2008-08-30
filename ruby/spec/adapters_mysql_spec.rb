@@ -26,7 +26,7 @@ q = Kwery::Query.new(conn)
 now = :current_timestamp
 
 
-describe 'Kwery::MySQLQuery#execute' do
+describe 'Kwery::Query#execute' do
 
   it "can create table statement." do
     proc {
@@ -87,25 +87,26 @@ END
 end
 
 
-describe "Kwery::Query.new" do
+#describe "Kwery::Query.new" do
+#
+#  it "returns Kwery::MySQLQuery object" do
+#    Kwery::Query.new(nil).should be_a_kind_of(Kwery::MySQLQuery)
+#  end
+#
+#end
+#
+#
+#describe "Kwery::Column.new" do
+#
+#  it "returns Kwery::MySQLColumn object" do
+#    Kwery::Column.new('name', :integer, nil, nil).should be_a_kind_of(Kwery::MySQLColumn)
+#  end
+#
+#end
 
-  it "returns Kwery::MySQLQuery object" do
-    Kwery::Query.new(nil).should be_a_kind_of(Kwery::MySQLQuery)
-  end
 
-end
-
-
-describe "Kwery::Column.new" do
-
-  it "returns Kwery::MySQLColumn object" do
-    Kwery::Column.new('name', :integer, nil, nil).should be_a_kind_of(Kwery::MySQLColumn)
-  end
-
-end
-
-
-describe "Kwery::MySQLColumn.to_sql" do
+#describe "Kwery::MySQLColumn.to_sql" do
+describe "Kwery::Column.to_sql" do
 
   it "appends 'null default null' when nullable and no default value" do
     class Foo1
