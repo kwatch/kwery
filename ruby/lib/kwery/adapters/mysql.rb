@@ -224,15 +224,15 @@ module Kwery
   end
 
 
-  class MySQLTableBuilder < TableBuilder
+  class MySQLTable < Table
     include MySQLCommon
   end
 
 
-  class TableBuilder
+  class Table
 
     def self.new(*args)
-      return MySQLTableBuilder.__new__(*args)  # TableBuilder.new returns MySQLTableBuilder object
+      return MySQLTable.__new__(*args)  # Table.new returns MySQLTable object
     end
 
   end
