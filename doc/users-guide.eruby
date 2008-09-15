@@ -50,6 +50,18 @@ members = q.get_all('members') {|c|
   c.where(:team_id, team['id']).where('created_at >', t).order_by_desc(:name)
 }
 
+## select t.id, t.name, count(*) count
+## from teams t, members m
+## where t.id = m.teams_id
+## group by t.id, t.name
+## order by count
+## limit 0, 3
+members = q.select('teams t, members m', 't.id, t.name, count(*) count') {|c|
+  c.where('t.id = m.teams_id')
+  c.group_by('t.id, t.name')
+  c.order_by(count).limit(0, 3)
+}
+
 ## insert into teams(name, desc) values('sos', 'SOS Brigade')
 q.insert('teams', {:name=>'sos', :desc=>'SOS Brigade'})
 
@@ -61,6 +73,54 @@ q.update('teams', values) {|c| c.where(:id, 123) }
 ## delete from members where name == 'taniguchi'
 q.delete('members') {|c| c.where(:name, 'taniguchi') }
                     # or q.delete('teams', :name, 'taniguchi')
+
+## create table
+class Team
+  include Kwery::Model
+  create_table('teams') do |t|
+    t.integer(:id)       {|c| c.primary_key.auto_increment }
+    t.string(:name, 255) {|c| c.not_null.unique }
+    t.text(:desc)
+    t.created_at(:timestamp) {|c| c.not_null }
+    t.updated_at(:timestamp) {|c| c.not_null.default(:current_timestamp) }
+  end
+end
+class Member
+  include Kwery::Model
+  create_table('teams') do |t|
+    t.integer(:id)       {|c| c.primary_key.auto_increment }
+    t.string(:name, 255) {|c| c.not_null }
+    t.references(:team_id, Team) {|c| c.not_null }
+    t.created_at(:timestamp) {|c| c.not_null }
+    t.updated_at(:timestamp) {|c| c.not_null.default(:current_timestamp) }
+  end
+end
+q.execute(Team.to_sal)
+q.execute(Member.to_sal)
+
+## select
+team = q.get(Team) {|c| c.where(:id, 123) }  # or q.get(Team, :id, 123)
+t = Time.mktime(2008, 1, 1)
+members = q.get_all(Member) {|c|
+  c.where(:team_id, team['id']).where('created_at >', t).order_by_desc(:name)
+}
+members = q.select(['t'=>Team, 'm'=>Member], 't.id, t.name, count(*) count') {|c|
+  c.where('t.id = m.teams_id')
+  c.group_by('t.id, t.name')
+  c.order_by(count).limit(0, 3)
+}
+
+## insert
+now = :current_timestamp
+team = Team.new(null, 'sos', 'sample team', now, now)
+q.insert_model(team)
+
+## update
+team.desc = 'SOS Brigade'
+q.update_model(team)
+
+## delete
+q.delete_model(team)
 .--------------------
 % else raise "ERROR: line=#{__LINE__}"
 % end
