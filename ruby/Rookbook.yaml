@@ -1,0 +1,124 @@
+###
+### $Rev$
+### $Release: $
+### $Copyright$
+### $License$
+###
+
+properties:
+  - release:	0.1.0
+
+parameters:
+  - project:	kwery
+  - gem_name:	kwery
+  - copyright:	copyright(c) 2008 kuwata-lab.com all rights reserved.
+  - license:	MIT License
+  - text_files:	[README.txt, CHANGES.txt, MIT-LICENSE, setup.rb, $(gem_name).gemspec]
+  - doc_files  :  [doc/users-guide.html, doc/docstyle.css]
+  - apidocdir:	doc-api
+  - home*:	ENV['HOME']
+  - libfiles*:	Dir.glob("lib/**/*")
+  - base:	$(project)-$(release)
+  - gem_base:	$(gem_name)-$(release)
+
+
+recipes:
+
+  - product:	:all
+    ingreds:	[ :spec, :build ]
+    #ingreds:	[ $(text-files), $(doc_files) ]
+
+  - product:	:build
+    desc:	create packages
+    ingreds:	[ build/$(base).tar.gz, build/$(base).zip, build/$(gem_base).gem ]
+
+  - product:	:test
+    ingreds:	[ :spec ]
+
+  - product:	:spec
+    method*: |
+	for item in %w[query adapters_mysql model]
+	  puts
+	  #puts "*** #{command}"
+	  sys "spec spec/#{item}_spec.rb"
+	end
+
+  - product:	:clear
+    method*: |
+	rm_rf 'build', 'doc-api'
+
+  - product:	:apidoc
+    desc:	create api docment by RDoc
+    ingreds:	[ $(apidocdir)/index.html ]
+
+  - product:	$(apidocdir)/index.html
+    ingreds:	[ $(libfiles), README.txt ]
+    method*: |
+	rm_rf '$(apidocdir)'
+	sys "rdoc -o $(apidocdir) -S -m README.txt README.txt lib/*"
+
+  - product:    build/$(project)-$(release).tar.gz
+    desc:       create *.tar.gz
+    ingreds:    [ build/$(project)-$(release) ]
+    method*: |
+        rm_f @product if test(?f, @product)
+	chdir 'build' do
+          tar_czf File.basename(@product), File.basename(@ingred)
+	end
+
+  - product:    build/$(project)-$(release).zip
+    desc:       create *.zip
+    ingreds:    [ build/$(project)-$(release) ]
+    method*: |
+        rm_f @product if test(?f, @product)
+	chdir 'build' do
+          zip_r File.basename(@product), File.basename(@ingred)
+	end
+	
+  - product:    build/$(gem_name)-$(release).gem
+    desc:       create *.gem
+    ingreds:    [ build/$(project)-$(release) ]
+    method*: |
+        dir = @ingred
+        #cd dir do
+        #  Gem.manage_gems
+        #  Gem::GemRunner.new.run ['build', '$(gem_name).gemspec']
+        #end
+        chdir dir do sys "gem build $(project).gemspec" end
+        mv "#{dir}/#{File.basename(@product)}", 'build'
+
+  - product:    build/$(project)-$(release)
+    ingreds:    [ $(text_files), $(doc_files), :apidoc ]
+    method*: |
+        comment 'delete and create directory'
+        #release = @matches[1]
+        release = '$(release)'
+        dir = "build/$(project)-#{release}"
+        rm_rf dir if test(?d, dir)
+        mkdir_p dir
+        #
+        rm_rf 'lib/**/*.rbc'
+        store 'lib/**/*', text_files, dir
+        #
+        chdir 'doc' do sys 'rook :html' end
+        mkdir_p "#{dir}/doc"
+        cp_r doc_files, "#{dir}/doc"
+        #
+        rm_f 'spec/**/*.{cache,rbc}'
+        store 'spec/*.{rb,yaml}', dir
+        #
+        store '$(apidocdir)/**/*', dir
+        #store 'lib/**/*', 'test/**/*', text_files, dir do |f|
+        #  base = File.basename(f)
+        #  #!exclude_libs.include?(base)
+        #end
+        #
+        edit "#{dir}/**/*" do |content|
+          content.gsub!(/\$Release:.*?\$/, "$Release: #{release} $")
+          content.gsub!(/\$Release\$/, "#{release}")
+          content.gsub!(/\$Copyright\$/, '$(copyright)')
+          content.gsub!(/\$License\$/, '$(license)')
+          content
+        end
+        #
+        chmod 0644, "#{dir}/**/*", :filetype=>'file'
